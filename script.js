@@ -1519,7 +1519,7 @@ ${chatText}
         const data = JSON.stringify(localStorage);
         const blob = new Blob([data], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `system_backup_${Date.now()}.json`;
+        const a = document.createElement('a'); a.href = url; a.download = `月沉机数据_${Date.now()}.json`;
         a.click(); URL.revokeObjectURL(url); _ui_notify_('系统数据已导出');
     }
 
