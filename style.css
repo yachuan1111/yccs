@@ -31,11 +31,11 @@
             --glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
         }
 
-        /* 高级 iOS 风格开关 */
-        input[type="checkbox"] { width: 44px !important; height: 24px !important; padding: 0 !important; appearance: none; -webkit-appearance: none; background: #E5E5EA; border-radius: 12px !important; position: relative; outline: none; cursor: pointer; transition: background 0.3s; border: none !important; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05) !important; flex-shrink: 0; }
-        body.dark-mode input[type="checkbox"] { background: #333; }
+        /* 优化版极简开关 */
+        input[type="checkbox"] { width: 40px !important; height: 20px !important; padding: 0 !important; appearance: none; -webkit-appearance: none; background: rgba(0,0,0,0.08); border-radius: 10px !important; position: relative; outline: none; cursor: pointer; transition: background 0.3s ease; border: none !important; flex-shrink: 0; }
+        body.dark-mode input[type="checkbox"] { background: rgba(255,255,255,0.15); }
         input[type="checkbox"]:checked { background: var(--text-main); }
-        input[type="checkbox"]::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: var(--bg-color); border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.3s cubic-bezier(0.2, 0.85, 0.32, 1.2); }
+        input[type="checkbox"]::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: var(--bg-color); border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1); }
         input[type="checkbox"]:checked::after { transform: translateX(20px); }
         
         /* 拍一拍居中样式 */
@@ -134,8 +134,8 @@
         
         .open { transform: translateX(0) !important; opacity: 1 !important; pointer-events: auto !important; visibility: visible !important; }
 
-        .app-header { padding: 50px 20px 15px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
-        .app-header-title { font-size: calc(18px * var(--text-scale)); font-weight: 600; }
+        .app-header { padding: 50px 20px 15px; display: flex; justify-content: space-between; align-items: center; z-index: 10; position: relative; }
+        .app-header-title { font-size: calc(18px * var(--text-scale)); font-weight: 600; position: absolute; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         .glass-btn {
             width: 40px; height: 40px; background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);

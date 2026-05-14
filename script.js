@@ -2926,6 +2926,31 @@ ${wbText}
         tempMaskAvatar = ''; $('mask-avatar-preview').style.display = 'none'; $('mask-avatar-text').style.display = 'block';
         tempPersonaBg = ''; $('p-bg-preview').textContent = '未设置';
         openSubView('sub-add-persona');
+        bindAutoSaveToPersonaForm();
+    }
+
+    function bindAutoSaveToPersonaForm() {
+        const formContainer = document.querySelector('#sub-add-persona .form-container');
+        if (!formContainer) return;
+        
+        // 移除旧的监听器防止重复绑定
+        const newContainer = formContainer.cloneNode(true);
+        formContainer.parentNode.replaceChild(newContainer, formContainer);
+        
+        let autoSaveTimer;
+        newContainer.addEventListener('input', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                clearTimeout(autoSaveTimer);
+                autoSaveTimer = setTimeout(() => {
+                    savePersona(true);
+                }, 1000); // 停止输入1秒后自动保存
+            }
+        });
+        newContainer.addEventListener('change', (e) => {
+            if (e.target.tagName === 'SELECT' || e.target.type === 'checkbox') {
+                savePersona(true);
+            }
+        });
     }
 
     function editPersona(id) {
@@ -3002,12 +3027,16 @@ ${wbText}
 
         tempPersonaBg = p.chatBg || ''; $('p-bg-preview').textContent = tempPersonaBg ? '已设置专属壁纸' : '未设置';
         openSubView('sub-add-persona');
+        bindAutoSaveToPersonaForm();
     }
 
-    function savePersona() {
+    function savePersona(isAuto = false) {
         const _i = $('persona-edit-id').value;
         const _n = $('p-name').value.trim();
-        if(!_n) return _ui_notify_('请输入角色名称');
+        if(!_n) {
+            if(!isAuto) _ui_notify_('请输入角色名称');
+            return;
+        }
         
         /* 修复报错：增加安全判断，如果元素不存在则返回默认值 */
         const _dt = { 
@@ -3042,6 +3071,7 @@ ${wbText}
             }
         } else {
             myPersonas.push(_dt);
+            if (isAuto) $('persona-edit-id').value = _dt.id; // 自动保存新角色时，赋予ID防止重复创建
         }
         
         // 保存面具头像
@@ -3057,8 +3087,13 @@ ${wbText}
         localStorage.setItem('myPersonas', JSON.stringify(myPersonas)); 
         renderPersonas(); 
         renderRecentChats(); 
-        closeSubView('sub-add-persona'); 
-        _ui_notify_('角色保存成功');
+        
+        if (!isAuto) {
+            closeSubView('sub-add-persona'); 
+            _ui_notify_('角色保存成功');
+        } else {
+            _ui_notify_('已自动保存');
+        }
         
         if (currentChatPersona && String(currentChatPersona.id) === String(_dt.id)) {
             currentChatPersona = _dt;
