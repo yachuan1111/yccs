@@ -168,7 +168,7 @@
         .capsule-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .capsule-name { margin: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: calc(14px * var(--text-scale)); font-weight: 600; color: var(--text-main); }
 
-        .chat-input-transparent { position: relative; width: 100%; padding: 12px 20px 34px; display: flex; align-items: center; gap: 12px; z-index: 10; flex-shrink: 0; }
+        .chat-input-transparent { position: relative; width: 100%; padding: 12px 20px calc(34px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 12px; z-index: 10; flex-shrink: 0; }
 
         /* 登录加载界面样式 */
         #boot-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #FAFAFA; z-index: 9999999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.8s ease; font-family: 'Cormorant Garamond', serif; }
@@ -205,7 +205,7 @@
         .msg-row.ai .msg-bubble { background: var(--ai-bubble); color: var(--text-main); border-top-left-radius: 4px; }
         .msg-row.user .msg-bubble { background: var(--user-bubble); color: var(--user-text); border-top-right-radius: 4px; }
 
-        .app-bottom-nav { position: absolute; bottom: 24px; left: 20px; right: 20px; height: 64px; background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-radius: 32px; box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border); display: flex; justify-content: space-around; align-items: center; z-index: 10; padding: 0 10px; }
+        .app-bottom-nav { position: absolute; bottom: calc(24px + env(safe-area-inset-bottom)); left: 20px; right: 20px; height: 64px; background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-radius: 32px; box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border); display: flex; justify-content: space-around; align-items: center; z-index: 10; padding: 0 10px; }
         .nav-tab { display: flex; flex-direction: column; align-items: center; color: var(--text-sub); cursor: pointer; width: 50px; transition: color 0.2s; }
         .nav-tab.active { color: var(--accent-color); }
         .nav-tab svg { width: 24px; height: 24px; margin-bottom: 4px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -538,7 +538,7 @@
 
             /* 底部 Dock 栏样式 */
         .desktop-dock {
-            position: absolute; bottom: 20px; left: 20px; right: 20px; height: 84px;
+            position: absolute; bottom: calc(20px + env(safe-area-inset-bottom)); left: 20px; right: 20px; height: 84px;
             background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
             border-radius: 28px; display: flex; justify-content: space-around; align-items: center; padding: 0 10px;
             box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border); z-index: 10;
@@ -1184,3 +1184,14 @@
     from { transform: translateX(100vw); }
     to { transform: translateX(-100%); }
 }
+/* 界面排版控制 */
+.nordic-list { display: flex; flex-direction: column; gap: 30px; }
+.nordic-item { cursor: pointer; transition: opacity 0.3s; }
+.nordic-item:active { opacity: 0.5; }
+.nordic-title { font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #111; letter-spacing: 0.5px; margin-bottom: 4px; }
+.nordic-sub { font-family: 'Cormorant Garamond', serif; font-size: 13px; font-style: italic; color: #888; }
+
+body.dark-mode #settings-app-window { background: #111 !important; color: #fff !important; }
+body.dark-mode #settings-app-window .glass-btn { border-color: #333 !important; color: #fff !important; }
+body.dark-mode .nordic-title { color: #fff; }
+body.dark-mode .nordic-sub { color: #aaa; }
