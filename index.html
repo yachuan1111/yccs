@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22AURA%22%2C%22short_name%22%3A%22AURA%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23000000%22%2C%22theme_color%22%3A%22%23000000%22%7D">
+        <title>月沉</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+    
+<link rel="stylesheet" href="style.css"></head>
+<body>
+
+<!-- 登录加载界面 -->
+<div id="boot-loader">
+    <div class="loader-text">月沉机</div>
+    <div class="loader-line"></div>
+</div>
+
+<div class="phone-container">
+    <div class="screen">
+        <canvas id="effect-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999;"></canvas>
+        <div id="danmaku-container" style="position:absolute; top:10%; left:0; width:100%; height:40%; pointer-events:none; z-index:9998; overflow:hidden;"></div>
+        <!-- 心声卡片弹窗 -->
+        <div class="modal-overlay" id="mind-card-modal" style="z-index: 9999999 !important; position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); background: rgba(0,0,0,0.3);">
+            <div class="mind-card-container">
+                <div class="mind-card-heart"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg> <span id="mind-heart-rate">75</span> BPM</div>
+                <div class="mind-card-header">
+                    <img id="mind-avatar" class="mind-card-avatar" src="">
+                    <div>
+                        <div id="mind-name" class="mind-card-name">NAME</div>
+                        <div id="mind-sign" class="mind-card-sign">Signature</div>
+                    </div>
+                </div>
+                <div class="mind-card-section">
+                    <div class="mind-card-label">AFFECTION (好感度)</div>
+                    <div id="mind-affection" class="mind-card-text" style="font-family: 'Inter', sans-serif; font-weight: 600;">0%</div>
+                </div>
+                <div class="mind-card-section">
+                    <div class="mind-card-label">APPEARANCE &amp; ACTION (穿着与动作)</div>
+                    <div id="mind-appearance" class="mind-card-text">...</div>
+                </div>
+                <div class="mind-card-section">
+                    <div class="mind-card-label">CURRENT MOOD (当前情绪)</div>
+                    <div id="mind-mood" class="mind-card-text" style="font-weight: 600;">...</div>
+                </div>
+                <div class="mind-card-section">
+                    <div class="mind-card-label">INNER VOICE (心声)</div>
+                    <div id="mind-voice" class="mind-card-text" style="font-style: italic;">...</div>
+                </div>
+                <div class="mind-card-section">
+                    <div class="mind-card-label">SECRET FANTASY (隐秘幻想)</div>
+                    <div id="mind-fantasy" class="mind-card-text">...</div>
+                </div>
+                <button class="glass-btn-rect" style="margin-top: 20px; width: 100%;" onclick="closeMindCard()">CLOSE</button>
+            </div>
+        </div>
+        
+        <!-- 消息横幅 -->
+        <div id="app-toast-banner" style="position:absolute; top:-100px; left:10px; right:10px; background:var(--glass-bg); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); border-radius:16px; padding:12px 16px; display:flex; align-items:center; gap:12px; box-shadow:0 10px 30px rgba(0,0,0,0.15); z-index:999999; transition:transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); border:1px solid var(--glass-border);">
+            <img id="toast-avatar" src="" style="width:36px; height:36px; border-radius:10px; object-fit:cover;">
+            <div style="flex:1; overflow:hidden;">
+                <div id="toast-name" style="font-size:13px; font-weight:600; color:var(--text-main); margin-bottom:2px;">Name</div>
+                <div id="toast-msg" style="font-size:11px; color:var(--text-sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Message</div>
+            </div>
+        </div>
+
+        <div class="status-bar" id="status-bar">
+            <span id="status-time">00:00</span>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21L15.6 16.2C14.6 15.4 13.4 15 12 15C10.6 15 9.4 15.4 8.4 16.2L12 21ZM12 3C7.9 3 4.2 4.5 1.2 6.9L3.6 10.1C6 8.2 9 7 12 7C15 7 18 8.2 20.4 10.1L22.8 6.9C19.8 4.5 16.1 3 12 3Z"></path></svg>
+                <span id="battery-level-text" style="font-size: 12px; margin-right: 2px; font-weight: 500;">100%</span>
+                <svg width="22" height="12" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="1" y="1" width="20" height="12" rx="3"></rect>
+                    <rect id="battery-level-rect" x="2" y="2" width="18" height="10" rx="2" fill="currentColor" stroke="none"></rect>
+                    <path d="M23 5V9"></path>
+                </svg>
+            </div>
+        </div>
+        <div class="notch" id="dynamic-island">
+            <div class="notch-music-info" id="notch-music-info">
+                <img src="" class="notch-cover" id="notch-cover">
+                <div class="notch-text" id="notch-text">歌曲 - 歌手</div>
+                <div class="notch-waveform"><span></span><span></span><span></span></div>
+            </div>
+        </div>
+
+        <!-- 桌面编辑顶部栏 -->
+        <div id="desktop-edit-topbar" style="display:none; position:absolute; top:50px; left:0; width:100%; padding:0 20px; justify-content:space-between; z-index:150; opacity:0; transition:opacity 0.3s;">
+            <div style="position:relative;">
+                <div style="padding:6px 14px; border-radius:20px; font-size:14px; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); color:#fff; cursor:pointer; font-weight:500;" onclick="toggleEditMenu()">编辑</div>
+                <div id="desktop-edit-menu" style="display:none; position:absolute; top:40px; left:0; background:var(--glass-bg); backdrop-filter:var(--glass-blur); border-radius:14px; padding:8px; width:130px; box-shadow:var(--glass-shadow);">
+                    <div style="padding:10px; font-size:14px; border-bottom:1px solid var(--glass-border); color:var(--text-main); cursor:pointer;" onclick="alert('添加小组件开发中')">添加小组件</div>
+                    <div style="padding:10px; font-size:14px; color:var(--text-main); cursor:pointer;" onclick="openCustomizeSheet()">自定义</div>
+                </div>
+            </div>
+            <div style="padding:6px 14px; border-radius:20px; font-size:14px; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); color:#fff; cursor:pointer; font-weight:500;" onclick="exitEditMode()">完成</div>
+        </div>
+
+        <!-- 自定义底部面板 -->
+        <div id="desktop-customize-sheet" style="display:none; flex-direction:column; position:absolute; bottom:0; left:0; width:100%; background:var(--glass-bg); backdrop-filter:var(--glass-blur); border-radius:30px 30px 0 0; padding:24px 20px 40px; z-index:200; transform:translateY(100%); transition:transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="setDesktopStyle('light')">
+                    <div style="width:40px; height:40px; border-radius:50%; background:#fff; border:2px solid var(--glass-border); display:flex; justify-content:center; align-items:center;"><div style="width:20px; height:20px; border-radius:50%; background:#e5e5ea;"></div></div>
+                    <span style="font-size:12px; color:var(--text-main);">浅色</span>
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="setDesktopStyle('dark')">
+                    <div style="width:40px; height:40px; border-radius:50%; background:#1c1c1e; border:2px solid var(--glass-border); display:flex; justify-content:center; align-items:center;"><div style="width:20px; height:20px; border-radius:50%; background:#333;"></div></div>
+                    <span style="font-size:12px; color:var(--text-main);">深色</span>
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="setDesktopStyle('transparent')">
+                    <div style="width:40px; height:40px; border-radius:50%; background:transparent; border:2px dashed var(--text-sub); display:flex; justify-content:center; align-items:center;"><div style="width:20px; height:20px; border-radius:50%; border:1px dashed var(--text-sub);"></div></div>
+                    <span style="font-size:12px; color:var(--text-main);">透明</span>
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="setDesktopStyle('tinted')">
+                    <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg, #007aff, #34c759); border:2px solid var(--glass-border); display:flex; justify-content:center; align-items:center;"><div style="width:20px; height:20px; border-radius:50%; background:rgba(255,255,255,0.5);"></div></div>
+                    <span style="font-size:12px; color:var(--text-main);">色调</span>
+                </div>
+            </div>
+            <div id="tint-slider-container" style="display:none; flex-direction:column; gap:15px; margin-top:10px;">
+                <div>
+                    <div style="font-size:10px; color:var(--text-sub); margin-bottom:5px;">色相 (Hue)</div>
+                    <input type="range" min="0" max="360" value="200" style="width:100%; accent-color:var(--text-main);" oninput="updateTintHue(this.value)">
+                </div>
+                <div>
+                    <div style="font-size:10px; color:var(--text-sub); margin-bottom:5px;">饱和度 (Saturation)</div>
+                    <input type="range" min="0" max="10" step="0.5" value="3" style="width:100%; accent-color:var(--text-main);" oninput="updateTintSat(this.value)">
+                </div>
+            </div>
+        </div>
+
+               <div class="home-screen" id="home-screen">
+            <div class="widget-container">
+                <div id="desktop-widget" style="width: 300px; height: 140px; background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(242,242,244,0.8) 100%); border-radius: 24px; padding: 20px; position: relative; box-shadow: 0 8px 24px rgba(0,0,0,0.04); border: 1.5px solid #fff; background-size: cover; background-position: center;">
+                    <label style="position: absolute; top: 15px; right: 15px; cursor: pointer; z-index: 10;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #8E8E93;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        <input type="file" accept="image/*" style="display: none;" onchange="handleWidgetBgUpload(event)">
+                    </label>
+                    <div contenteditable="true" style="font-size: 12px; color: #8E8E93; letter-spacing: 1px; outline: none; margin-bottom: 10px; position: relative; z-index: 2;">TUESDAY, OCT 24</div>
+                    <div contenteditable="true" id="widget-time-text" style="font-size: 42px; font-weight: 700; color: var(--widget-text-color); letter-spacing: -1.5px; outline: none; margin-bottom: 10px; position: relative; z-index: 2;">10:24</div>
+                    <div style="display: flex; align-items: center; gap: 8px; position: relative; z-index: 2;">
+                        <div style="width: 8px; height: 8px; background: var(--widget-text-color); border-radius: 50%;"></div>
+                        <div contenteditable="true" style="font-size: 13px; font-weight: 500; color: var(--widget-text-color); outline: none;">Lumi AI is ready</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 桌面网格 (放置非Dock应用) -->
+            <div class="app-grid">
+                <!-- 新增音乐 App 桌面图标 -->
+                <div class="app-icon-wrapper" onclick="openMusicApp()">
+                    <div class="app-icon" id="icon-music" style="background: linear-gradient(135deg, #1a1a1a, #333333); color: #fff;">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                    </div>
+                    <div class="app-name" id="name-music">音乐</div>
+                </div>
+                <!-- 钱包 App 桌面图标 -->
+                <div class="app-icon-wrapper" onclick="openWalletApp()">
+                    <div class="app-icon" id="icon-wallet" style="background: linear-gradient(135deg, #111111, #333333); color: #fff;">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                    </div>
+                    <div class="app-name" id="name-wallet">钱包</div>
+                </div>
+                <div class="app-icon-wrapper" onclick="document.getElementById('dream-app-window').classList.add('open')">
+                    <div class="app-icon" id="icon-dream" style="background: #ffffff; color: #111111; border: 1px solid rgba(0,0,0,0.05);">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    </div>
+                    <div class="app-name" id="name-dream">灵境回溯</div>
+                </div>
+            </div>
+
+            <!-- 底部 Dock 栏 -->
+            <div class="desktop-dock">
+                <div class="app-icon-wrapper" onclick="openApp()">
+                    <div class="app-icon wechat" id="icon-wechat" style="background: linear-gradient(135deg, #222, #000); color: #fff;">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 14.5c-2.5 0-4.5-1.6-4.5-3.5s2-3.5 4.5-3.5 4.5 1.6 4.5 3.5-2 3.5-4.5 3.5zm0-5.5c-.6 0-1 .4-1 1s.4 1 1 1 1-.4 1-1-.4-1-1-1zm5.5 7c-2.2 0-4-1.4-4-3s1.8-3 4-3 4 1.4 4 3-1.8 3-4 3zm0-4.5c-.4 0-.8.3-.8.8s.3.8.8.8-.3-.8-.8-.8z"></path></svg>
+                    </div>
+                    <div class="app-name" id="name-wechat">微信</div>
+                </div>
+                <div class="app-icon-wrapper" onclick="openThemeApp()">
+                    <div class="app-icon" id="icon-theme" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); color: #fff;">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+                    </div>
+                    <div class="app-name" id="name-theme">主题</div>
+                </div>
+                <div class="app-icon-wrapper" onclick="openWorldbookApp()">
+                    <div class="app-icon" id="icon-worldbook" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: #fff;">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    </div>
+                    <div class="app-name" id="name-worldbook">世界书</div>
+                </div>
+                <div class="app-icon-wrapper" onclick="openSettingsApp()">
+                    <div class="app-icon" id="icon-settings" style="background: #8E8E93; color: #fff;">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </div>
+                    <div class="app-name" id="name-settings">设置</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-window" id="app-window">
+            <div class="app-header">
+                <div class="app-header-title" id="app-title">微信</div>
+                <div class="glass-btn" id="wechat-add-btn" onclick="openAddPersona()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="square"><line x1="12" y1="4" x2="12" y2="20"></line><line x1="4" y1="12" x2="20" y2="12"></line></svg></div>            </div>
+
+            <div class="app-content">
+                <div class="view active" id="view-chats">
+                    <div id="recent-chats-container"><div style="text-align:center; color:var(--text-sub); margin-top: 40px; font-size: 14px;">暂无聊天记录，请前往通讯录选择角色开始聊天</div></div>
+                </div>
+
+                <div class="view" id="view-list">
+                    <div class="list-item" onclick="openAddPersona()">
+                        <div class="avatar" style="background: #333;">新</div>
+                        <div class="list-info"><div class="list-name">新的朋友</div></div>
+                    </div>
+                    <div id="persona-list-container"></div>
+                </div>
+
+                <div class="view" id="view-more">
+                    <div class="menu-list"><div class="menu-item"><span>朋友圈 (开发中)</span><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div></div>
+                </div>
+
+                <div class="view" id="view-profile">
+                    <div class="profile-minimal">
+                        <input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
+                        <div class="profile-avatar-large" onclick="$('avatar-upload').click()">
+                            <img id="my-avatar-img" src=""><span id="my-avatar-text">U</span>
+                        </div>
+                        <div class="editable-text profile-name-edit" contenteditable="true" id="display-nickname" onblur="saveUserProfile()">NAME</div>
+                        <div class="editable-text profile-bio-edit" contenteditable="true" id="display-bio" onblur="saveUserProfile()">这是您的个性签名<br>点击就能编辑</div>
+                    </div>
+                    
+                    <div class="menu-list">
+                        <div class="menu-item" onclick="openSubView('sub-masks')"><span>我的身份面具</span><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                        <div class="menu-item" onclick="openSubView('sub-settings')"><span>设置</span><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                        <div class="menu-item" onclick="$('bg-upload').click()"><span>全局聊天背景</span><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                        <input type="file" id="bg-upload" accept="image/*" style="display:none" onchange="handleBgUpload(event)">
+                        <div class="menu-item" onclick="openSubView('sub-font')"><span>字体与显示</span><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-bottom-nav">
+                <div class="nav-tab active" data-target="view-chats" data-title="微信"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg><span>微信</span></div>
+                <div class="nav-tab" data-target="view-list" data-title="通讯录"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>通讯录</span></div>
+                <div class="nav-tab" data-target="view-more" data-title="发现"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg><span>发现</span></div>
+                <div class="nav-tab" data-target="view-profile" data-title="我"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>我</span></div>
+            </div>
+        </div>
+
+        <!-- 设置 App 窗口 -->
+        <div class="app-window" id="settings-app-window">
+            <div class="app-header">
+                <div class="app-header-title">设置</div>
+                <div style="width:40px"></div>
+            </div>
+            <div class="app-content" style="padding: 0 20px; overflow-y: auto; padding-bottom: 40px;">
+                <div class="modern-list">
+                    <div class="modern-item" onclick="openSubView('sub-settings')">
+                        <div class="modern-num">01</div>
+                        <div class="modern-content">
+                            <div class="modern-title">API 配置 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                            <div class="modern-sub">神经网络</div>
+                        </div>
+                    </div>
+                    <div class="modern-item">
+                        <div class="modern-num">02</div>
+                        <div class="modern-content">
+                            <div class="modern-title">夜间模式 <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode(this.checked)"></div>
+                            <div class="modern-sub">视觉皮层</div>
+                        </div>
+                    </div>
+                    <div class="modern-item">
+                        <div class="modern-num">03</div>
+                        <div class="modern-content">
+                            <div class="modern-title">显示灵动岛 <input type="checkbox" id="notch-toggle" onchange="toggleNotch(this.checked)"></div>
+                            <div class="modern-sub">感知系统</div>
+                        </div>
+                    </div>
+                    <div class="modern-item">
+                        <div class="modern-num">04</div>
+                        <div class="modern-content">
+                            <div class="modern-title">显示状态栏 <input type="checkbox" id="statusbar-toggle" onchange="toggleStatusBar(this.checked)"></div>
+                            <div class="modern-sub">系统日志</div>
+                        </div>
+                    </div>
+                    <div class="modern-item" onclick="openSubView('sub-font')">
+                        <div class="modern-num">05</div>
+                        <div class="modern-content">
+                            <div class="modern-title">字体大小调整 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                            <div class="modern-sub">语言中心</div>
+                        </div>
+                    </div>
+                    <div class="modern-item" onclick="exportAllData()">
+                        <div class="modern-num">06</div>
+                        <div class="modern-content">
+                            <div class="modern-title">导出所有数据 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></div>
+                            <div class="modern-sub">记忆库备份</div>
+                        </div>
+                    </div>
+                    <div class="modern-item" onclick="document.getElementById('import-all-file').click()">
+                        <div class="modern-num">07</div>
+                        <div class="modern-content">
+                            <div class="modern-title">导入数据恢复 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></div>
+                            <div class="modern-sub">记忆库覆写</div>
+                            <input type="file" id="import-all-file" accept=".json" style="display:none" onchange="importAllData(event)">
+                        </div>
+                    </div>
+                    <div class="modern-item" onclick="clearAllData()">
+                        <div class="modern-num">08</div>
+                        <div class="modern-content">
+                            <div class="modern-title" style="color: #ff3b30;">清空所有数据 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></div>
+                            <div class="modern-sub">格式化</div>
+                        </div>
+                    </div>
+                    <div class="modern-item">
+                        <div class="modern-num">09</div>
+                        <div class="modern-content">
+                            <div class="modern-title">全屏模式 <input type="checkbox" id="fullscreen-toggle" onchange="toggleFullScreen(this.checked)"></div>
+                            <div class="modern-sub">沉浸式网页体验</div>
+                        </div>
+                    </div>
+                    <div class="modern-item">
+                        <div class="modern-num">10</div>
+                        <div class="modern-content">
+                            <div class="modern-title">隐藏手机外壳 <input type="checkbox" id="shell-toggle" onchange="togglePhoneShell(this.checked)"></div>
+                            <div class="modern-sub">铺满整个屏幕</div>
+                        </div>
+                    </div>
+                    <div class="modern-item">
+                        <div class="modern-num">11</div>
+                        <div class="modern-content">
+                            <div class="modern-title">系统通知 <input type="checkbox" id="sys-notify-toggle" onchange="toggleSysNotify(this.checked)"></div>
+                            <div class="modern-sub">获取设备通知权限</div>
+                        </div>
+                    </div>
+                    <div class="modern-item">
+                        <div class="modern-num">12</div>
+                        <div class="modern-content">
+                            <div class="modern-title">时间感知 <input type="checkbox" id="time-aware-toggle" onchange="toggleTimeAware(this.checked)"></div>
+                            <div class="modern-sub">感知现实时间流逝与离线时长</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主题 App 窗口 -->
+        <div class="app-window" id="theme-app-window">
+            <div class="app-header">
+                <div class="app-header-title">主题与外观</div>
+                <div style="width:40px"></div>
+            </div>
+            <div class="app-content" style="padding: 0 20px 80px 20px; overflow-y: auto;">
+                <div class="modern-list">
+                    <div class="modern-item" onclick="$('desktop-bg-upload').click()">
+                        <div class="modern-num">01</div>
+                        <div class="modern-content">
+                            <div class="modern-title">更换桌面壁纸 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                            <div class="modern-sub">全局背景</div>
+                            <input type="file" id="desktop-bg-upload" accept="image/*" style="display:none" onchange="handleDesktopBgUpload(event)">
+                        </div>
+                    </div>
+                    <div class="modern-item" onclick="openAppEditModal()">
+                        <div class="modern-num">02</div>
+                        <div class="modern-content">
+                            <div class="modern-title">自定义 App 图标/名称 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                            <div class="modern-sub">个性化桌面</div>
+                        </div>
+                    </div>
+                    <div class="modern-item">
+                        <div class="modern-num">03</div>
+                        <div class="modern-content">
+                            <div class="modern-title">App 图标透明背景 <input type="checkbox" onchange="toggleAppIconBg(this.checked)"></div>
+                            <div class="modern-sub">桌面图标样式</div>
+                        </div>
+                    </div>
+                    <div class="modern-item">
+                        <div class="modern-num">02</div>
+                        <div class="modern-content">
+                            <div class="modern-title">开启桌面文字阴影 <input type="checkbox" checked="" onchange="document.documentElement.style.setProperty('--app-name-shadow', this.checked ? '0 1px 2px rgba(0,0,0,0.3)' : 'none')"></div>
+                            <div class="modern-sub">提升可读性</div>
+                        </div>
+                    </div>
+                    <div class="modern-item">
+                        <div class="modern-num">03</div>
+                        <div class="modern-content">
+                            <div class="modern-title">桌面文字颜色 <input type="color" value="#ffffff" onchange="document.documentElement.style.setProperty('--app-name-color', this.value)" style="height: 24px; width: 40px; padding: 0; border: none; background: transparent;"></div>
+                            <div class="modern-sub">自定义色彩</div>
+                        </div>
+                    </div>
+                    <div class="modern-item">
+                        <div class="modern-num">04</div>
+                        <div class="modern-content">
+                            <div class="modern-title">小组件文字颜色 <input type="color" value="#111111" onchange="document.documentElement.style.setProperty('--widget-text-color', this.value)" style="height: 24px; width: 40px; padding: 0; border: none; background: transparent;"></div>
+                            <div class="modern-sub">自定义色彩</div>
+                        </div>
+                    </div>
+                    <div class="modern-item">
+                        <div class="modern-num">08</div>
+                        <div class="modern-content">
+                            <div class="modern-title">隐藏小组件时间 <input type="checkbox" onchange="document.getElementById('widget-time-text').style.display = this.checked ? 'none' : 'block'"></div>
+                            <div class="modern-sub">桌面小组件显示设置</div>
+                        </div>
+                    </div>
+                                 <div class="modern-item">
+                        <div class="modern-num">05</div>
+                        <div class="modern-content">
+                            <div class="modern-title">隐藏底部小横条 <input type="checkbox" id="hide-indicator-toggle" onchange="toggleHomeIndicator(this.checked)"></div>
+                            <div class="modern-sub">沉浸式体验</div>
+                        </div>
+                    </div>
+                    <div class="modern-item">
+                        <div class="modern-num">06</div>
+                        <div class="modern-content">
+                            <div class="modern-title">图标圆角弧度: <span><span id="icon-radius-val">16</span>px</span></div>
+                            <input type="range" id="icon-radius-slider" min="0" max="30" value="16" oninput="updateIconRadius(this.value)" style="width: 100%; margin-top: 10px; accent-color: var(--text-main);">
+                        </div>
+                    </div>
+                    <div class="modern-item">
+                        <div class="modern-num">07</div>
+                        <div class="modern-content">
+                            <div class="modern-title">消息通知提示音 <button class="glass-btn-rect" style="width:auto; padding:4px 12px; margin:0; font-size:10px;" onclick="playTestSound()">试听</button></div>
+                            <div class="modern-sub">支持 URL 或本地上传</div>
+                            <input type="text" id="notify-sound-url" placeholder="输入音频 URL..." style="width:100%; margin-top:8px; background:transparent; border:none; border-bottom:1px solid var(--glass-border); color:var(--text-main); outline:none; font-size:12px; padding:4px 0;" onblur="saveNotifySound()">
+                            <input type="file" id="notify-sound-upload" accept="audio/*" style="display:none" onchange="handleNotifySoundUpload(event)">
+                            <button class="glass-btn-rect" style="margin-top:8px;" onclick="$('notify-sound-upload').click()">本地上传音频</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+                <!-- App 编辑弹窗 -->
+        <div class="modal-overlay" id="app-edit-modal">
+            <div class="modal-content">
+                <h3 style="margin-bottom: 16px; font-size: 16px; color: var(--text-main);">编辑 App</h3>
+                <div class="form-group">
+                    <label>选择要编辑的 App</label>
+                    <select id="edit-app-select">
+                        <option value="wechat">微信</option>
+                        <option value="settings">设置</option>
+                        <option value="worldbook">世界书</option>
+                        <option value="theme">主题</option>
+                        <option value="wallet">钱包</option>
+                        <option value="music">音乐</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>新名称</label><input type="text" id="edit-app-name" placeholder="留空则不修改"></div>
+                <div class="form-group"><label>新图标 URL</label><input type="text" id="edit-app-icon-url" placeholder="https://..."></div>
+                <div class="form-group">
+                    <label>或 本地上传图标</label>
+                    <input type="file" id="edit-app-icon-file" accept="image/*" style="display:none" onchange="handleAppIconFile(event)">
+                    <button type="button" class="glass-btn-rect" onclick="$('edit-app-icon-file').click()">选择图片</button>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="glass-btn-rect" onclick="$('app-edit-modal').classList.remove('show')">取消</button>
+                    <button type="button" class="glass-btn-rect dark" onclick="saveAppEdit()">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 情绪密码 App 窗口 -->
+        <div class="app-window" id="emotion-app-window">
+            <div class="app-header">
+                <div class="glass-btn" onclick="cipherGlobalBack()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+                <div class="app-header-title">情绪密码</div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="font-size:12px; font-weight:600; letter-spacing:1px;">✦ <span id="cipher-score-top">0</span></div>
+                </div>
+            </div>
+            <div class="app-content" style="padding: 0; overflow-y: auto;">
+                <div class="cipher-app">
+                    <!-- 菜单页 -->
+                    <div class="cipher-page active" id="cp-menu">
+                        <div style="text-align:center; margin-bottom:16px; margin-top:10px;">
+                            <div style="font-size:32px; margin-bottom:8px;">🔐</div>
+                            <div style="font-size:20px; font-weight:600; color:var(--text-main);">Emotion Cipher</div>
+                            <div style="font-size:10px; color:var(--text-sub); letter-spacing:2px; margin-top:4px;">情绪密码破译</div>
+                        </div>
+                        <div class="cipher-stats-row">
+                            <div class="cipher-stat"><div class="cipher-stat-val" id="cp-s-created">0</div><div class="cipher-stat-label">ENCODED</div></div>
+                            <div class="cipher-stat"><div class="cipher-stat-val" id="cp-s-solved">0</div><div class="cipher-stat-label">DECODED</div></div>
+                            <div class="cipher-stat"><div class="cipher-stat-val" id="cp-s-unlocked">0</div><div class="cipher-stat-label">UNLOCKED</div></div>
+                        </div>
+                        <div class="modern-list">
+                            <div class="modern-item" onclick="cipherStartMode('encode')">
+                                <div class="modern-content">
+                                    <div class="modern-title">ENCODE <span>我来出题</span></div>
+                                    <div class="modern-sub">用符号+碎词藏一种情绪，让角色猜</div>
+                                </div>
+                            </div>
+                            <div class="modern-item" onclick="cipherStartMode('decode')">
+                                <div class="modern-content">
+                                    <div class="modern-title">DECODE <span>角色出题</span></div>
+                                    <div class="modern-sub">角色用密码藏情绪，你来猜</div>
+                                </div>
+                            </div>
+                            <div class="modern-item" onclick="cipherNav('cp-codex')">
+                                <div class="modern-content">
+                                    <div class="modern-title">CODEX <span>密码图鉴</span></div>
+                                    <div class="modern-sub">已解锁的情绪密码</div>
+                                </div>
+                            </div>
+                            <div class="modern-item" onclick="cipherNav('cp-bank')">
+                                <div class="modern-content">
+                                    <div class="modern-title">BANK <span>题库管理</span></div>
+                                    <div class="modern-sub">导入、导出、编辑题库</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 角色选择 -->
+                    <div class="cipher-page" id="cp-roles">
+                        <div class="cipher-section-label" style="margin-bottom:10px;">SELECT ENTITY / 选择角色</div>
+                        <div id="cp-role-list"></div>
+                        <div class="cipher-action-row"><button class="glass-btn-rect dark" onclick="cipherConfirmRole()">CONFIRM / 确认</button></div>
+                    </div>
+
+                    <!-- 编码页 -->
+                    <div class="cipher-page" id="cp-encode">
+                        <div class="cipher-diff-row" id="cp-encode-tabs">
+                            <div class="cipher-diff-btn active" data-m="random" onclick="cipherSwitchEncMode('random',this)">RANDOM / 随机</div>
+                            <div class="cipher-diff-btn" data-m="free" onclick="cipherSwitchEncMode('free',this)">FREE / 自由</div>
+                        </div>
+                        <div id="cp-enc-random">
+                            <div class="cipher-target-box"><div class="cipher-target-label">TARGET EMOTION</div><div class="cipher-target-text" id="cp-enc-target">—</div></div>
+                            <div style="text-align:center; margin-bottom:10px;"><button class="glass-btn-rect" onclick="cipherReroll()" style="display:inline-flex; padding:6px 12px; font-size:10px; width:auto;">↻ REROLL</button></div>
+                        </div>
+                        <div id="cp-enc-free" style="display:none;">
+                            <div class="cipher-section-label">YOUR EMOTION / 你想藏的情绪</div>
+                            <textarea class="cipher-textarea" id="cp-free-input" placeholder="输入你想藏的情绪" rows="2" style="margin-bottom:10px;"></textarea>
+                        </div>
+                        <div class="cipher-box empty" id="cp-cipher-box"><div class="cipher-ph">TAP SYMBOLS BELOW</div></div>
+                        <div class="cipher-tags" id="cp-tags"></div>
+                        <div class="cipher-input-row">
+                            <input type="text" class="cipher-text-input" id="cp-word-input" placeholder="FRAGMENT / 碎词" maxlength="10">
+                            <button class="cipher-add-btn" onclick="cipherAddWord()">+</button>
+                        </div>
+                        <div class="cipher-kb">
+                            <div class="cipher-kb-tabs" id="cp-kb-tabs"></div>
+                            <div class="cipher-sym-grid" id="cp-sym-grid"></div>
+                        </div>
+                        <div class="cipher-action-row">
+                            <button class="glass-btn-rect" onclick="cipherClear()">CLEAR</button>
+                            <button class="glass-btn-rect dark" onclick="cipherSubmitEncode()">SEND</button>
+                        </div>
+                    </div>
+
+                    <!-- AI猜测 -->
+                    <div class="cipher-page" id="cp-guess">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+                            <img class="cipher-role-avatar" id="cp-guess-avatar" src="">
+                            <div><div style="font-size:14px; font-weight:600; color:var(--text-main);" id="cp-guess-name">—</div><div style="font-size:10px; color:var(--text-sub);" id="cp-guess-status">THINKING...</div></div>
+                        </div>
+                        <div class="cipher-box" id="cp-guess-cipher"></div>
+                        <div class="cipher-guess-card">
+                            <div class="cipher-guess-label">TA'S INTERPRETATION</div>
+                            <div id="cp-guess-content" style="font-size:14px; line-height:1.6; color:var(--text-main);"><div class="cipher-thinking"><span></span><span></span><span></span></div></div>
+                        </div>
+                        <div id="cp-judge-section">
+                            <div class="cipher-section-label" style="text-align:center; margin-bottom:10px;">DID THEY GET IT RIGHT?</div>
+                            <div style="display:flex; gap:8px;">
+                                <button class="glass-btn-rect dark" onclick="cipherJudge(true)" style="flex:1;">✓ CORRECT</button>
+                                <button class="glass-btn-rect" onclick="cipherJudge(false)" style="flex:1; color:#ef4444; border-color:#ef4444;">✗ WRONG</button>
+                            </div>
+                        </div>
+                        <div id="cp-reveal" style="display:none; margin-top:14px;">
+                            <div class="cipher-target-box"><div class="cipher-target-label">CORRECT ANSWER</div><div class="cipher-target-text" id="cp-reveal-text"></div></div>
+                            <button class="glass-btn-rect" onclick="cipherNav('cp-menu')" style="width:100%;">RETURN</button>
+                        </div>
+                    </div>
+
+                    <!-- 解码页 -->
+                    <div class="cipher-page" id="cp-decode"></div>
+
+                    <!-- 图鉴 -->
+                    <div class="cipher-page" id="cp-codex"></div>
+
+                    <!-- 题库 -->
+                    <div class="cipher-page" id="cp-bank">
+                        <div style="display:flex; gap:6px; margin-bottom:14px;">
+                            <button class="glass-btn-rect" onclick="cipherExportBank()" style="flex:1; margin:0;">EXPORT</button>
+                            <label class="glass-btn-rect" style="flex:1; margin:0; cursor:pointer; display:flex; align-items:center; justify-content:center;">IMPORT<input type="file" accept=".json" onchange="cipherImportBank(event)" style="display:none;"></label>
+                            <button class="glass-btn-rect dark" onclick="cipherOpenAddModal()" style="flex:1; margin:0;">+ ADD</button>
+                        </div>
+                        <div class="cipher-section-label" style="margin-bottom:6px;">PUZZLE BANK (<span id="cp-bank-count">0</span>)</div>
+                        <div id="cp-bank-list"></div>
+                        <div style="border-top:1px solid var(--glass-border); margin:14px 0;"></div>
+                        <div class="cipher-section-label" style="margin-bottom:6px;">EMOTION POOL (<span id="cp-pool-count">0</span>)</div>
+                        <div id="cp-pool-list"></div>
+                        <div class="cipher-input-row" style="margin-top:6px;">
+                            <input type="text" class="cipher-text-input" id="cp-pool-input" placeholder="ADD EMOTION">
+                            <button class="cipher-add-btn" onclick="cipherAddToPool()">+</button>
+                        </div>
+                    </div>
+
+                    <!-- 结果弹窗 -->
+                    <div class="cipher-result-overlay" id="cp-result">
+                        <div class="cipher-result-icon" id="cp-r-icon">🎉</div>
+                        <div class="cipher-result-title" id="cp-r-title">Decoded!</div>
+                        <div class="cipher-result-sub" id="cp-r-sub">你准确地读懂了这份情绪</div>
+                        <div class="cipher-result-answer"><div class="cipher-result-answer-label">ANSWER</div><div class="cipher-result-answer-text" id="cp-r-answer">—</div></div>
+                        <div class="cipher-result-score pos" id="cp-r-score">+10 ✦</div>
+                        <button class="glass-btn-rect dark" onclick="cipherCloseResult()" style="width:180px;">CONTINUE</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加题目弹窗 -->
+        <div class="modal-overlay" id="modal-cipher-add">
+            <div class="modal-content">
+                <h3 style="margin-bottom: 16px; font-size: 16px; color: var(--text-main);">Add Puzzle</h3>
+                <div class="form-group">
+                    <label>SYMBOLS / 符号密码</label>
+                    <input type="text" id="cp-add-symbols" placeholder="例如：🌧️+🍞+⏳">
+                </div>
+                <div class="form-group">
+                    <label>ANSWER / 正确答案</label>
+                    <input type="text" id="cp-add-answer" placeholder="例如：等早餐的时候有点难过">
+                </div>
+                <div class="form-group">
+                    <label>HINT / 提示（可选）</label>
+                    <input type="text" id="cp-add-hint" placeholder="例如：一个关于等待的情绪">
+                </div>
+                <div class="form-group">
+                    <label>WRONG OPTIONS / 干扰选项（每行一个）</label>
+                    <textarea id="cp-add-wrongs" placeholder="每行一个错误选项" style="height:80px;"></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="glass-btn-rect" onclick="$('modal-cipher-add').classList.remove('show')">CANCEL</button>
+                    <button type="button" class="glass-btn-rect dark" onclick="cipherSavePuzzle()">SAVE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 隐藏的相册与相机输入框及长按菜单 -->
+        <input type="file" id="real-album-upload" accept="image/*" style="display:none" onchange="handleRealAlbum(event)">
+        <input type="file" id="camera-upload" accept="image/*" capture="environment" style="display:none" onchange="handleRealAlbum(event)">
+        
+        <div class="msg-context-menu" id="ticket-style-menu">
+            <div class="msg-menu-btn" onclick="changeTicketStyle('movie')">电影票 (暗金)</div>
+            <div class="msg-menu-btn" onclick="changeTicketStyle('concert')">演唱会 (霓虹)</div>
+            <div class="msg-menu-btn" onclick="changeTicketStyle('travel')">旅行票 (日落)</div>
+            <div class="msg-menu-btn" onclick="changeTicketStyle('exhibit')">展览票 (极简)</div>
+            <div class="msg-menu-btn" onclick="changeTicketStyle('love')">纪念票 (浪漫)</div>
+            <div class="msg-menu-btn" onclick="changeTicketStyle('radio')">电台票 (午夜)</div>
+        </div>
+
+        <div class="msg-context-menu" id="msg-context-menu">
+            <div class="msg-menu-btn" onclick="handleMsgAction('edit')">编辑消息</div>
+            <div class="msg-menu-btn" onclick="handleMsgAction('copy')">复制消息</div>
+            <div class="msg-menu-btn" onclick="handleMsgAction('regenerate')">重新生成</div>
+            <div class="msg-menu-btn" onclick="handleMsgAction('quote')">引用回复</div>
+            <div class="msg-menu-btn" onclick="handleMsgAction('optimize')">优化排版</div>
+            <div class="msg-menu-btn" onclick="handleMsgAction('translate')" id="menu-btn-translate">翻译</div>
+            <div class="msg-menu-btn" onclick="handleMsgAction('multiselect')" style="color: #ff3b30;">多选删除</div>
+        </div>
+
+        <div id="multi-select-bar" style="display:none; position:absolute; bottom:0; left:0; width:100%; padding:12px 20px 34px; background:var(--glass-bg); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); z-index:9999; justify-content:space-between; align-items:center; border-top:1px solid var(--glass-border); box-shadow: 0 -4px 20px rgba(0,0,0,0.1);">
+            <button class="glass-btn-rect" style="width:auto; margin:0; color:var(--text-main);" onclick="exitMultiSelect()">取消</button>
+            <button class="glass-btn-rect" style="width:auto; margin:0; color:var(--text-main);" onclick="selectAllMsgs()">全选</button>
+            <button class="glass-btn-rect" style="width:auto; margin:0; color:#ff3b30; border-color:#ff3b30; background: rgba(255,59,48,0.1);" onclick="deleteSelectedMsgs()">删除选中</button>
+        </div>
+
+        <div class="app-window" id="memory-app-window" style="z-index: 80;">
+            <div class="app-header">
+                <div class="app-header-title">记忆管理</div>
+                <div class="glass-btn" onclick="goHome()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+            </div>
+            <div class="app-content" style="padding: 0 20px; overflow-y: auto; padding-bottom: 40px;">
+                <div style="background: var(--glass-bg); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--glass-border);">
+                    <div style="font-size: 12px; color: var(--text-sub); margin-bottom: 4px;">已总结记忆总数 (核心+滚动)</div>
+                    <div style="font-size: 28px; font-weight: bold; color: var(--text-main);" id="memory-total-count">0</div>
+                </div>
+                
+                <div class="cipher-section-label" style="margin-bottom: 10px;">TA 记录的你的喜好 (全局设定)</div>
+                <textarea id="memory-user-preferences" style="width: 100%; height: 80px; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-main); font-size: 13px; outline: none; resize: none; margin-bottom: 16px;" placeholder="角色随时记录的关于你的喜好、习惯等..." onblur="saveUserPreferences()"></textarea>
+
+                <div class="cipher-section-label" style="margin-bottom: 10px;">记忆碎片检索</div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <input type="text" id="memory-search-input" placeholder="搜索记忆关键词..." oninput="filterMemories()">
+                </div>
+                <div id="memory-tag-cloud" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px;"></div>
+                <div id="memory-list-container" class="modern-list"></div>
+            </div>
+        </div>
+
+        <!-- 钱包 App 窗口 (Nordic Minimalist Wallet Pro Max) -->
+        <div class="app-window" id="wallet-app-window" style="background: #F7F7F7; z-index: 80;">
+            <div class="app-content" style="padding: 0; position: relative;">
+                <!-- 登录/注册视图 -->
+                <div class="wallet-view active" id="walletAuthView">
+                    <div class="wallet-scroll-area">
+                        <div class="wallet-header-nav" style="margin-bottom: 20px;">
+                            <div class="glass-btn" onclick="goHome()" style="background: transparent; border: 1px solid #E5E5E5; color: #111; width: 36px; height: 36px;"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+                        </div>
+                        <div class="wallet-auth-header" id="walletAuthTitle">Sign In</div>
+                        <div class="wallet-auth-sub" id="walletAuthSub">登录您的极简钱包</div>
+                        
+                        <input type="text" class="wallet-auth-input" placeholder="账号 (Account)" id="walletAuthUser">
+                        <input type="password" class="wallet-auth-input" placeholder="密码 (Password)" id="walletAuthPwd">
+                        
+                        <button class="wallet-auth-btn" id="walletAuthBtn" onclick="handleWalletAuth()">Confirm / 确认</button>
+                        <div class="wallet-auth-switch" onclick="toggleWalletAuthMode()" id="walletAuthSwitchText">没有账号？点击注册 (Register)</div>
+                    </div>
+                </div>
+
+                <!-- 主钱包视图 -->
+                <div class="wallet-view" id="walletMainView">
+                    <!-- 侧边栏遮罩 -->
+                    <div class="wallet-sidebar-overlay" id="walletSidebarOverlay" onclick="toggleWalletSidebar()"></div>
+                    
+                    <!-- 侧边栏 -->
+                    <div class="wallet-sidebar" id="walletSidebar">
+                        <div class="wallet-sidebar-user" id="walletDisplayUserName">User</div>
+                        <div class="wallet-sidebar-menu-item" onclick="openWalletModal('walletPwdModal')">
+                            <span>修改支付密码 (Pay Password)</span><span>→</span>
+                        </div>
+                        <div class="wallet-sidebar-menu-item" onclick="toggleWalletPasswordless()">
+                            <span>免密支付 (Passwordless Pay)</span><span id="walletPwdlessStatus">关闭 (Off)</span>
+                        </div>
+                        <div class="wallet-sidebar-menu-item" onclick="openWalletSwitchAccount()">
+                            <span>切换账号 (Switch Account)</span><span>→</span>
+                        </div>
+                        <div class="wallet-sidebar-menu-item" onclick="doWalletLogout()">
+                            <span>退出登录 (Log Out)</span><span>→</span>
+                        </div>
+                    </div>
+
+                    <div class="wallet-scroll-area">
+                        <!-- 顶部导航 (包含返回按钮) -->
+                        <div class="wallet-header-nav">
+                            <div class="glass-btn" onclick="goHome()" style="background: transparent; border: 1px solid #E5E5E5; color: #111; width: 36px; height: 36px;"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+                            <div class="wallet-header-title">Portfolio.</div>
+                            <div class="wallet-menu-icon" onclick="toggleWalletSidebar()">
+                                <span></span><span></span><span></span>
+                            </div>
+                        </div>
+
+                        <!-- 个人资料区域 -->
+                        <input type="file" id="wallet-avatar-upload" accept="image/*" style="display:none" onchange="handleWalletAvatarUpload(event)">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px; cursor: pointer;">
+                            <div id="walletProfileAvatar" onclick="document.getElementById('wallet-avatar-upload').click()" style="width: 50px; height: 50px; border-radius: 50%; background: #111; color: #fff; display: flex; justify-content: center; align-items: center; font-family: 'Cormorant Garamond', serif; font-size: 20px; overflow: hidden;">U</div>
+                            <div onclick="editWalletProfile()">
+                                <div id="walletProfileName" style="font-size: 18px; font-weight: 600; color: #111;">User</div>
+                                <div style="font-size: 11px; color: #888;">点击头像更换，点击此处改名</div>
+                            </div>
+                        </div>
+
+                        <!-- 核心余额 (总资产) -->
+                        <section class="wallet-balance-section">
+                            <div class="wallet-label">总资产 (Total Assets)</div>
+                            <div class="wallet-amount" id="walletTotalAssets">¥ 0.00</div>
+                            <div class="wallet-actions">
+                                <button class="wallet-auth-btn" style="margin-top: 0; padding: 12px 24px; width: auto;" onclick="openWalletModal('walletActionModal')">资金划转 Transfer</button>
+                            </div>
+                        </section>
+
+                        <!-- 银行卡滑动区 -->
+                        <div class="wallet-card-slider-container">
+                            <section class="wallet-card-slider" id="walletCardSlider">
+                                <!-- JS 动态渲染银行卡 -->
+                            </section>
+                        </div>
+
+                        <!-- 资产列表 -->
+                        <section class="wallet-list-section">
+                            <div class="wallet-list-header">
+                                <div class="wallet-list-title">资产明细 (Assets)</div>
+                            </div>
+                            <div id="walletAssetsList">
+                                <!-- JS 动态渲染资产 -->
+                            </div>
+                        </section>
+
+                        <!-- 统计网格 -->
+                        <section class="wallet-stats-grid">
+                            <div class="wallet-stat-item">
+                                <div class="wallet-label">本月收入 (Income)</div>
+                                <div class="wallet-stat-value" id="walletMonthIncome">¥ 0.00</div>
+                            </div>
+                            <div class="wallet-stat-item">
+                                <div class="wallet-label">本月支出 (Expense)</div>
+                                <div class="wallet-stat-value" id="walletMonthExpense">¥ 0.00</div>
+                            </div>
+                        </section>
+
+                        <!-- 账单明细 -->
+                        <section class="wallet-list-section">
+                            <div class="wallet-list-header">
+                                <div class="wallet-list-title">账单 (Statement)</div>
+                                <div class="wallet-filter-opts">
+                                    <span class="wallet-filter-opt active" onclick="filterWalletTxn('all', this)">All</span>
+                                    <span class="wallet-filter-opt" onclick="filterWalletTxn('in', this)">In</span>
+                                    <span class="wallet-filter-opt" onclick="filterWalletTxn('out', this)">Out</span>
+                                </div>
+                            </div>
+                            <div id="walletTransactionList">
+                                <!-- JS 动态渲染账单 -->
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <!-- 资金划转 弹窗 -->
+                <div class="wallet-modal" id="walletActionModal">
+                    <div class="wallet-modal-close" onclick="closeWalletModal('walletActionModal')">关闭 Close</div>
+                    <div class="wallet-modal-title">资金划转 (Transfer)</div>
+                    
+                    <div class="wallet-form-group">
+                        <label>转出方 (From)</label>
+                        <select class="wallet-minimal-select" id="walletSourceSelect"></select>
+                    </div>
+
+                    <div class="wallet-form-group">
+                        <label>转入方 (To)</label>
+                        <select class="wallet-minimal-select" id="walletDestSelect"></select>
+                    </div>
+
+                    <div class="wallet-form-group">
+                        <label>金额 (Amount)</label>
+                        <input type="number" class="wallet-minimal-input large" id="walletAmountInput" placeholder="¥ 0.00">
+                    </div>
+
+                    <button class="wallet-confirm-btn" onclick="confirmWalletTransaction()">确认 Confirm</button>
+                </div>
+
+                <!-- 添加卡片 弹窗 -->
+                <div class="wallet-modal" id="walletAddCardModal">
+                    <div class="wallet-modal-close" onclick="closeWalletModal('walletAddCardModal')">关闭 Close</div>
+                    <div class="wallet-modal-title">添加卡片 (Add Card)</div>
+                    
+                    <div class="wallet-form-group">
+                        <label>卡号 (Card Number)</label>
+                        <input type="text" class="wallet-minimal-input" id="walletNewCardNumber" placeholder="输入银行卡号">
+                    </div>
+
+                    <div class="wallet-form-group">
+                        <label>选择卡片样式 (Card Style)</label>
+                        <div class="wallet-color-picker">
+                            <div class="wallet-color-option color-black active" onclick="selectWalletColor(this, 'black')"></div>
+                            <div class="wallet-color-option color-silver" onclick="selectWalletColor(this, 'silver')"></div>
+                            <div class="wallet-color-option color-gold" onclick="selectWalletColor(this, 'gold')"></div>
+                            <div class="wallet-color-option color-blue" onclick="selectWalletColor(this, 'blue')"></div>
+                            <div class="wallet-color-option color-green" onclick="selectWalletColor(this, 'green')"></div>
+                            <div class="wallet-color-option color-purple" onclick="selectWalletColor(this, 'purple')"></div>
+                            <div class="wallet-color-option color-red" onclick="selectWalletColor(this, 'red')"></div>
+                            <div class="wallet-color-option color-cyan" onclick="selectWalletColor(this, 'cyan')"></div>
+                            <div class="wallet-color-option color-orange" onclick="selectWalletColor(this, 'orange')"></div>
+                        </div>
+                    </div>
+
+                    <button class="wallet-confirm-btn" onclick="confirmWalletAddCard()">添加 Add</button>
+                </div>
+
+                <!-- 银行卡详情/余额 弹窗 -->
+                <div class="wallet-modal" id="walletCardDetailModal">
+                    <div class="wallet-modal-close" onclick="closeWalletModal('walletCardDetailModal')">关闭 Close</div>
+                    <div class="wallet-modal-title">卡片详情 (Card Info)</div>
+                    
+                    <div class="wallet-form-group">
+                        <label>卡号 (Card Number)</label>
+                        <div class="wallet-minimal-input" id="walletDetailCardNum" style="font-family: monospace;">****</div>
+                    </div>
+                    <div class="wallet-form-group">
+                        <label>当前余额 (Balance)</label>
+                        <div class="wallet-minimal-input large" id="walletDetailCardBalance">¥ 0.00</div>
+                    </div>
+                </div>
+
+                <!-- 设置支付密码 弹窗 -->
+                <div class="wallet-modal" id="walletPwdModal">
+                    <div class="wallet-modal-close" onclick="closeWalletModal('walletPwdModal')">关闭 Close</div>
+                    <div class="wallet-modal-title">支付密码 (Pay Password)</div>
+                    
+                    <div class="wallet-form-group">
+                        <label>设置新密码 (New Password)</label>
+                        <input type="password" class="wallet-minimal-input" id="walletNewPayPwd" placeholder="输入6位数字">
+                    </div>
+
+                    <button class="wallet-confirm-btn" onclick="saveWalletPayPwd()">保存 Save</button>
+                </div>
+
+                <!-- 账单小票 弹窗 -->
+                <div class="wallet-modal" id="walletReceiptModal">
+                    <div class="wallet-modal-close" onclick="closeWalletModal('walletReceiptModal')">关闭 Close</div>
+                    <div class="wallet-modal-title">凭证 (Receipt)</div>
+                    <div class="wallet-receipt-paper" id="walletReceiptContent">
+                        <!-- JS 渲染小票内容 -->
+                    </div>
+                </div>
+
+                <!-- 微信式切换账号界面 -->
+                <div class="wallet-switch-account-modal" id="walletSwitchAccountModal">
+                    <div class="wallet-sa-close" onclick="closeWalletSwitchAccount()">取消 Cancel</div>
+                    <div class="wallet-sa-title">切换账号<br><span style="font-size: 14px; color: #888; font-family: 'Inter', sans-serif;">Switch Account</span></div>
+                    
+                    <div class="wallet-sa-list" id="walletAccountList">
+                        <!-- JS 动态渲染账号列表 -->
+                    </div>
+                    
+                    <button class="wallet-auth-btn" style="margin-top: 40px; background: transparent; color: #111; border: 1px dashed #111;" onclick="doWalletLogout()">+ 登录其他账号 (Add Account)</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-window" id="takeout-app-window">
+            <div class="app-header">
+                <div class="app-header-title">外卖</div>
+                <div class="glass-btn" onclick="goHome()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+            </div>
+            <div class="app-content" style="padding: 20px; overflow-y: auto; background: var(--ai-bubble);">
+                <div class="cipher-section-label" style="margin-bottom: 10px;">附近商家 / SHOPS</div>
+                <div class="modern-list" id="takeout-shops-list"></div>
+            </div>
+        </div>
+
+        <div class="app-window" id="dream-app-window" style="background: #ffffff; color: #111111; transition: background 0.5s, color 0.5s;">
+            <div class="app-header" style="padding-top: 60px; padding-bottom: 20px; border-bottom: none; background: transparent;">
+                <div class="glass-btn" onclick="document.getElementById('dream-app-window').classList.remove('open')" style="background: transparent; border: none; box-shadow: none; color: inherit;"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+                <div style="flex: 1;"></div>
+                <div class="glass-btn" onclick="const win = document.getElementById('dream-app-window'); if(win.style.background === 'rgb(255, 255, 255)' || win.style.background === '#ffffff'){ win.style.background = '#0a0a0a'; win.style.color = '#ffffff'; } else { win.style.background = '#ffffff'; win.style.color = '#111111'; }" style="background: transparent; border: none; box-shadow: none; color: inherit;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                </div>
+            </div>
+            <div class="app-content" style="padding: 0 30px; overflow-y: auto; scrollbar-width: none;">
+                <div style="font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; letter-spacing: 4px; margin-bottom: 10px; margin-top: 20px;">REVERIE.</div>
+                <div style="font-family: 'Inter', sans-serif; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.4; margin-bottom: 60px;">Subconscious Exploration</div>
+
+                <div style="margin-bottom: 40px;">
+                    <textarea id="dream-input" placeholder="记录昨夜的梦境碎片..." style="width: 100%; height: 120px; background: transparent; border: none; border-bottom: 1px solid rgba(128,128,128,0.2); font-family: 'Cormorant Garamond', serif; font-size: 18px; color: inherit; outline: none; resize: none; line-height: 1.6;"></textarea>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; font-family: 'Inter', sans-serif; font-size: 11px; letter-spacing: 1px; opacity: 0.6;">
+                    <div style="display: flex; gap: 20px;">
+                        <span style="cursor: pointer; border-bottom: 1px solid currentColor; padding-bottom: 2px;">公开</span>
+                        <span style="cursor: pointer;">仅角色可见</span>
+                    </div>
+                    <div style="cursor: pointer;" onclick="alert('邀请已发送，等待对方入梦...')">+ 邀请共梦</div>
+                </div>
+
+                <button onclick="analyzeDream()" style="width: 100%; padding: 16px; background: transparent; border: 1px solid currentColor; color: inherit; font-family: 'Inter', sans-serif; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.5'" onmouseout="this.style.opacity='1'">
+                    解析潜意识
+                </button>
+
+                <div style="margin-top: 60px; border-top: 1px solid rgba(128,128,128,0.1); padding-top: 40px;">
+                    <div style="font-family: 'Inter', sans-serif; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.4; margin-bottom: 20px;">Hidden Memories</div>
+                    <div id="dream-progress-text" style="font-family: 'Cormorant Garamond', serif; font-size: 14px; line-height: 1.8; opacity: 0.8; text-align: justify;">
+                        连续记录梦境以解锁角色深层的记忆碎片。当前进度：0/3
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 世界书 App 窗口 -->
+        <div class="app-window" id="worldbook-app-window">
+            <div class="app-header">
+                <div class="app-header-title">世界书设定</div>
+                <div class="glass-btn" onclick="openAddWorldbook()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="square"><line x1="12" y1="4" x2="12" y2="20"></line><line x1="4" y1="12" x2="20" y2="12"></line></svg></div>
+            </div>
+            <div class="app-content" style="padding: 0 20px; overflow-y: auto;">
+                <div id="worldbook-list-container"></div>
+            </div>
+        </div>
+                <!-- 音乐 App 窗口 (北欧极简杂志风) -->
+        <div class="app-window" id="music-app-window" style="background: var(--bg-color);">
+            <div class="app-header" style="padding-top: 60px; padding-bottom: 0;">
+                <div class="app-header-title" style="font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 600; letter-spacing: 1px;">音乐.</div>
+                <div class="glass-btn" onclick="goHome()" style="background: transparent; border: none; box-shadow: none;"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+            </div>
+            
+            <div class="app-content" style="display: flex; flex-direction: column; padding: 0 24px; position: relative;">
+                <!-- 登录区域 -->
+                <div id="music-login-section" style="margin-top: 40px;">
+                    <div style="font-family: 'Cormorant Garamond', serif; font-size: 42px; line-height: 1.1; margin-bottom: 10px;">聆听<br>纯粹<br>之音.</div>
+                    <div style="font-size: 12px; color: var(--text-sub); margin-bottom: 40px; letter-spacing: 1px;">连接你的网易云音乐账号</div>
+                    
+                    <input type="text" id="music-uid-input" placeholder="输入你的 UID..." style="width: 100%; padding: 16px 0; border: none; border-bottom: 1px solid var(--glass-border); background: transparent; font-size: 16px; outline: none; color: var(--text-main); font-family: 'Inter', sans-serif; margin-bottom: 24px;">
+                    
+                    <button class="glass-btn-rect dark" style="width: 100%; padding: 16px; border-radius: 0; font-family: 'Inter', sans-serif; letter-spacing: 2px; font-size: 12px;" onclick="loginMusicUID()">同步账号</button>
+                    
+                    <div style="text-align: center; margin-top: 24px; font-size: 10px; color: var(--text-sub); letter-spacing: 1px; cursor: pointer;" onclick="skipMusicLogin()">以游客身份继续 →</div>
+                </div>
+
+                <!-- 主界面区域 -->
+                <div id="music-main-section" style="display: none; flex: 1; flex-direction: column; overflow: hidden;">
+                    <div id="music-search-bar" style="display: none; margin-top: 10px; margin-bottom: 20px; flex-shrink: 0;">
+                        <input type="text" id="music-search-input" placeholder="搜索你想听的歌曲..." style="width: 100%; padding: 12px 0; border: none; border-bottom: 1px solid var(--glass-border); background: transparent; font-size: 14px; outline: none; color: var(--text-main);" onkeydown="if(event.key==='Enter') searchMusic()">
+                    </div>
+
+                    <div id="music-search-results" style="flex: 1; overflow-y: auto; padding-bottom: 160px; scrollbar-width: none;">
+                        <!-- 列表内容 -->
+                    </div>
+                    
+                    <!-- 个人主页区域 -->
+                    <div id="music-profile-section" style="display: none; flex: 1; flex-direction: column; padding-bottom: 160px; overflow-y: auto; scrollbar-width: none;">
+                        <div style="display: flex; flex-direction: column; align-items: center; margin-top: 20px; margin-bottom: 30px;">
+                            <div style="position: relative; width: 80px; height: 80px; margin-bottom: 16px; cursor: pointer;" onclick="$('music-avatar-upload').click()">
+                                <img id="music-user-avatar" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 2px solid var(--glass-border); background: var(--glass-bg);">
+                                <div style="position: absolute; bottom: 0; right: 0; background: var(--text-main); color: var(--bg-color); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">+</div>
+                            </div>
+                            <input type="file" id="music-avatar-upload" accept="image/*" style="display: none;" onchange="handleMusicAvatarUpload(event)">
+                            <div contenteditable="true" id="music-user-nickname" style="font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 600; color: var(--text-main); outline: none; border-bottom: 1px dashed var(--text-sub); padding-bottom: 4px;" onblur="saveMusicProfile()">Guest</div>
+                        </div>
+                        
+                        <div class="modern-list">
+                            <div class="modern-item" onclick="$('music-bg-upload').click()">
+                                <div class="modern-content">
+                                    <div class="modern-title">更换背景图 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                                    <div class="modern-sub">Customize Background</div>
+                                </div>
+                                <input type="file" id="music-bg-upload" accept="image/*" style="display: none;" onchange="handleMusicBgUpload(event)">
+                            </div>
+                            <div class="modern-item" onclick="logoutMusic()">
+                                <div class="modern-content">
+                                    <div class="modern-title" style="color: #ff3b30;">退出账号 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                                    <div class="modern-sub">Sign Out</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 极简迷你播放器 -->
+                <div id="music-mini-player" onclick="openMusicFullPlayer()" style="display: none; position: absolute; bottom: 80px; left: 0; right: 0; padding: 16px 24px; background: var(--bg-color); border-top: 1px solid var(--glass-border); align-items: center; gap: 16px; cursor: pointer; z-index: 90;">
+                    <img id="music-mini-cover" src="" style="width: 40px; height: 40px; object-fit: cover; filter: grayscale(20%);">
+                    <div style="flex: 1; overflow: hidden;">
+                        <div id="music-mini-title" style="font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px;"></div>
+                        <div id="music-mini-artist" style="font-family: 'Cormorant Garamond', serif; font-size: 12px; font-style: italic; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                    </div>
+                    <button onclick="toggleMusicPlay(event)" id="music-play-btn" style="background: transparent; color: var(--text-main); border: none; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </button>
+                </div>
+
+                <!-- 底部悬浮导航栏 -->
+                <div id="music-bottom-nav" style="display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 30px; padding: 8px 24px; gap: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); z-index: 100; align-items: center; white-space: nowrap;">
+                    <span onclick="switchMusicTab('playlist')" id="music-tab-playlist" style="font-family: 'Inter', sans-serif; font-size: 12px; cursor: pointer; color: var(--text-main); font-weight: 600; transition: color 0.3s;">歌单</span>
+                    <span onclick="switchMusicTab('search')" id="music-tab-search" style="font-family: 'Inter', sans-serif; font-size: 12px; cursor: pointer; color: var(--text-sub); transition: color 0.3s;">发现</span>
+                    <span onclick="switchMusicTab('playlist'); _ui_notify_('请在歌单中选择要一起听的歌曲');" style="font-family: 'Inter', sans-serif; font-size: 12px; cursor: pointer; color: var(--text-sub); transition: color 0.3s;">一起听</span>
+                    <span onclick="switchMusicTab('profile')" id="music-tab-profile" style="font-family: 'Inter', sans-serif; font-size: 12px; cursor: pointer; color: var(--text-sub); transition: color 0.3s;">个人</span>
+                </div>
+            </div>
+        </div>
+        <div class="sub-view" id="music-full-player" style="background: #222; color: #fff; z-index: 100;">
+            <div class="app-header" style="color: #fff;">
+                <div class="glass-btn" onclick="closeMusicFullPlayer()" style="color: #fff; border-color: rgba(255,255,255,0.2);"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+                <div class="app-header-title" style="text-align: center; flex: 1;">
+                    <div id="full-music-title" style="font-size: 16px; font-weight: bold;">歌曲名</div>
+                    <div id="full-music-artist" style="font-size: 12px; color: #aaa;">歌手</div>
+                </div>
+                <div style="width:40px"></div>
+            </div>
+            <div class="app-content" style="display: flex; flex-direction: column; align-items: center; padding: 20px;">
+                <div id="full-music-cd" style="width: 240px; height: 240px; border-radius: 50%; border: 10px solid rgba(255,255,255,0.1); margin-top: 40px; overflow: hidden; animation: spin 20s linear infinite; animation-play-state: paused;">
+                    <img id="full-music-cover" src="" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div id="full-music-lyrics" style="flex: 1; width: 100%; margin-top: 40px; overflow-y: auto; text-align: center; color: #aaa; font-size: 14px; line-height: 2; padding-bottom: 20px; mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);">
+                </div>
+                <div style="width: 100%; display: flex; align-items: center; gap: 10px; margin-top: 20px;">
+                    <span id="full-music-current" style="font-size: 12px; color: #aaa;">00:00</span>
+                    <input type="range" id="full-music-progress" value="0" min="0" max="100" style="flex: 1; height: 4px; accent-color: #fff; background: rgba(255,255,255,0.2); outline: none; -webkit-appearance: none; border-radius: 2px;" oninput="seekFullMusic(this.value)">
+                    <span id="full-music-duration" style="font-size: 12px; color: #aaa;">00:00</span>
+                </div>
+                <div style="width: 100%; display: flex; justify-content: space-around; align-items: center; margin-top: 30px; margin-bottom: 20px;">
+                    <div onclick="togglePlayMode()" id="play-mode-btn" style="cursor: pointer; color: #fff;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+                    </div>
+                    <div onclick="prevMusic()" style="cursor: pointer; color: #fff;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
+                    </div>
+                    <div onclick="toggleMusicPlay()" id="full-music-play-btn" style="cursor: pointer; width: 64px; height: 64px; border-radius: 50%; border: 2px solid #fff; display: flex; justify-content: center; align-items: center; color: #fff;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 4px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </div>
+                    <div onclick="nextMusic()" style="cursor: pointer; color: #fff;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+                    </div>
+                    <div onclick="toggleMusicLike()" id="music-like-btn" style="cursor: pointer; color: #fff;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <audio id="sys-audio-player" style="display:none;"></audio>
+
+        <!-- 表情包小弹窗 -->
+        <div id="sticker-panel" style="display:none; position:absolute; bottom:90px; left:20px; right:20px; background:var(--glass-bg); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); border:1px solid var(--glass-border); border-radius:24px; padding:16px; box-shadow:var(--glass-shadow); z-index:9999; flex-direction:column; gap:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--glass-border); padding-bottom:8px;">
+                <div style="font-size:14px; color:var(--text-main); font-weight:600; cursor:pointer;" onclick="showCustomSelect('选择表情分组', stickerGroups.map(g=&gt;({label:g.name, value:g.id})), val =&gt; { $('sticker-group-select-val').value = val; renderStickers(); })"><span id="sticker-group-select-display">默认表情</span> ▾</div>
+                <input type="hidden" id="sticker-group-select-val" value="default">
+                <div style="display:flex; gap:8px;">
+                    <span style="font-size:12px; color:var(--text-sub); cursor:pointer;" onclick="manageStickerGroups()">分组管理</span>
+                    <span style="font-size:12px; color:var(--text-sub); cursor:pointer;" onclick="toggleStickerManageMode()" id="sticker-manage-btn">管理</span>
+                </div>
+            </div>
+            <input type="text" id="sticker-search-input" placeholder="搜索表情描述..." oninput="renderStickers()" style="width:100%; background:rgba(0,0,0,0.05); border:none; border-radius:8px; padding:6px 10px; font-size:12px; outline:none; color:var(--text-main);">
+            <div id="sticker-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px 8px; max-height:250px; overflow-y:auto; padding-bottom:10px; scrollbar-width:none;"></div>
+            <div style="display:flex; gap:8px; margin-top:4px;">
+                <input type="file" id="sticker-upload" accept="image/*" multiple="" style="display:none" onchange="handleStickerUpload(event)">
+                <input type="file" id="sticker-doc-upload" accept=".txt" style="display:none" onchange="handleStickerDocUpload(event)">
+                <button class="glass-btn-rect" style="margin:0; flex:1; padding:8px;" onclick="$('sticker-upload').click()">本地上传</button>
+                <button class="glass-btn-rect" style="margin:0; flex:1; padding:8px;" onclick="importStickerDoc()">导入文档</button>
+            </div>
+            <div id="sticker-manage-actions" style="display:none; gap:8px; margin-top:4px;">
+                <button class="glass-btn-rect" style="margin:0; padding:8px; flex:1;" onclick="showCustomSelect('移动到分组', stickerGroups.map(g=&gt;({label:g.name, value:g.id})), val =&gt; moveSelectedStickers(val))">移动</button>
+                <button class="glass-btn-rect" style="margin:0; padding:8px; flex:1; color:#ff3b30; border-color:#ff3b30;" onclick="deleteSelectedStickers()">删除</button>
+            </div>
+        </div>
+
+        <!-- 子页面：添加/编辑世界书 -->
+        <div class="sub-view" id="sub-add-worldbook">
+            <div class="app-header">
+                <div class="glass-btn" onclick="closeSubView('sub-add-worldbook')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+                <div class="app-header-title" id="wb-form-title">创建设定</div><div style="width:40px"></div>
+            </div>
+            <div class="form-container">
+                <input type="hidden" id="wb-edit-id">
+                <div class="form-group"><label>设定名称</label><input type="text" id="wb-name" placeholder="例如：魔法学院"></div>
+                <div class="form-group"><label>触发关键词 (逗号分隔)</label><input type="text" id="wb-keys" placeholder="例如：魔法,学院,老师"></div>
+                <div class="form-group"><label>所属分组</label>
+                    <div style="display:flex; gap:8px;">
+                        <select id="wb-group-select" style="flex:1;"></select>
+                        <button type="button" class="glass-btn-rect" style="width:auto; margin:0; padding:0 12px;" onclick="manageWbGroups()">管理分组</button>
+                    </div>
+                </div>
+                <div class="form-group"><label>插入位置</label>
+                    <select id="wb-pos">
+                        <option value="before">前 (系统提示词之前)</option>
+                        <option value="middle">中 (系统提示词之后)</option>
+                        <option value="after">后 (聊天记录末尾)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
+                    <label style="margin-bottom:0;">全局通用</label>
+                    <input type="checkbox" id="wb-global">
+                </div>
+                <div class="form-group"><label>设定具体文本内容</label><textarea id="wb-content" rows="6" placeholder="详细描述这个设定的内容..."></textarea></div>
+                <button type="button" class="glass-btn-rect dark" onclick="saveWorldbook()">保存设定</button>
+            </div>
+        </div>
+        <!-- 聊天详情页 -->
+        <div class="chat-detail-view" id="chat-detail">
+            <div class="chat-scroll-area" id="chat-box"></div>
+            <div class="chat-header-transparent">
+                <div class="glass-btn" onclick="closeChatDetail()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+                <div class="chat-capsule"><div class="capsule-avatar" id="chat-header-avatar">A</div><div class="capsule-name" id="chat-header-name">AI 角色</div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-sub)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 4px;"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                <div class="glass-btn" onclick="editCurrentPersona()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg></div>
+            </div>
+            <div class="tool-menu" id="tool-menu">
+                <div class="tool-item" onclick="triggerTool('regenerate')"><div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.26l-3.27 3.27"></path></svg></div><div class="tool-label">重回</div></div>
+                <div class="tool-item" onclick="triggerTool('photo')"><div class="tool-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></div><div class="tool-label">照片</div></div>
+                <div class="tool-item" onclick="triggerTool('camera')"><div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg></div><div class="tool-label">拍摄</div></div>
+                <div class="tool-item" onclick="triggerTool('voice_call')"><div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></div><div class="tool-label">语音通话</div></div>
+                <div class="tool-item" onclick="triggerTool('transfer')"><div class="tool-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div><div class="tool-label">转账</div></div>
+                <div class="tool-item" onclick="triggerTool('pat_pat')"><div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></div><div class="tool-label">拍一拍</div></div>
+                <div class="tool-item" onclick="triggerTool('listen')"><div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></div><div class="tool-label">一起听</div></div>
+                <div class="tool-item" onclick="triggerTool('location')"><div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div><div class="tool-label">位置</div></div>
+                <div class="tool-item" onclick="triggerTool('offline')"><div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></div><div class="tool-label">线下模式</div></div>
+                <div class="tool-item" onclick="triggerTool('mars')"><div class="tool-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg></div><div class="tool-label">火星模式</div></div>
+                <div class="tool-item" onclick="triggerTool('read')"><div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></div><div class="tool-label">一起看书</div></div>
+                <div class="tool-item" onclick="triggerTool('format')"><div class="tool-icon"><svg viewBox="0 0 24 24"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg></div><div class="tool-label">修复排版</div></div>
+                <div class="tool-item" onclick="triggerTool('sticker')"><div class="tool-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg></div><div class="tool-label">表情</div></div>
+                <div class="tool-item" onclick="triggerTool('mind')"><div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></div><div class="tool-label">心声</div></div>
+            </div>
+            <div class="chat-input-transparent">
+                <!-- 输入框上方悬浮表情提示 -->
+                <div id="chat-sticker-suggest" style="display:none; position:absolute; top:-70px; left:20px; background:var(--glass-bg); backdrop-filter:var(--glass-blur); border:1px solid var(--glass-border); border-radius:12px; padding:8px; box-shadow:var(--glass-shadow); z-index:20; gap:8px; max-width:calc(100% - 40px); overflow-x:auto; scrollbar-width:none;"></div>
+                
+                <div id="reply-preview-bar">
+                    <div id="cancel-reply-btn" onclick="cancelQuote()"></div>
+                    <div class="reply-preview-content">
+                        <div class="reply-preview-name" id="reply-preview-name"></div>
+                        <div class="reply-preview-text" id="reply-preview-text"></div>
+                    </div>
+                </div>
+                <input type="text" id="chatInput" placeholder="Message..." onkeypress="if(event.key==='Enter') { event.preventDefault(); sendUserMessage(); }">
+                <div class="glass-btn" onclick="sendUserMessage()" onmousedown="startLongPress()" onmouseup="endLongPress()" onmouseleave="endLongPress()" ontouchstart="startLongPress()" ontouchend="endLongPress()" style="background: var(--text-main); color: var(--bg-color); border: none;">
+                    <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- 线下模式：故事编辑器 (包含样式和结构) -->
+        
+        <div class="offline-editor-view" id="offline-editor">
+            <div id="offline-bg-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; z-index: 0; transition: filter 0.3s;"></div>
+            <!-- 侧边栏遮罩层 -->
+            <div class="offline-drawer-overlay" id="offline-drawer-overlay" onclick="closeOfflineDrawers()"></div>
+
+            <!-- 左侧侧边栏：目录与分支 -->
+            <div class="offline-left-drawer" id="offline-left-drawer">
+                <div class="drawer-header">
+                    <span class="drawer-title">INDEX &amp; BRANCHES</span>
+                </div>
+                <div class="drawer-content">
+                    <div class="branch-tree" id="offline-branch-tree">
+                        <!-- 分支节点由 JS 动态渲染 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧侧边栏：世界与设定 -->
+            <div class="offline-right-drawer" id="offline-right-drawer">
+                <div class="drawer-header">
+                    <span class="drawer-title">LORE &amp; STATES</span>
+                </div>
+                <div class="drawer-content">
+                    <div class="setting-section">
+                        <div class="setting-label">BACKGROUND &amp; FONT (背景与字体)</div>
+                        <input type="file" id="offline-bg-upload" accept="image/*" style="display:none" onchange="handleOfflineBgUpload(event)">
+                        <div class="setting-value clickable" onclick="$('offline-bg-upload').click()" style="margin-bottom: 8px;">上传背景图片</div>
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                            <span style="font-size:10px; color:var(--text-sub); width:40px;">模糊度</span>
+                            <input type="range" id="offline-bg-blur" min="0" max="20" value="0" style="flex:1;" oninput="updateOfflineBgBlur(this.value)">
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:10px; color:var(--text-sub); width:40px;">字号</span>
+                            <input type="range" id="offline-font-size" min="12" max="24" value="16" style="flex:1;" oninput="updateOfflineFontSize(this.value)">
+                        </div>
+                    </div>
+                    <div class="setting-section">
+                        <div class="setting-label">WORLD LORE (世界书)</div>
+                        <select class="minimal-select" id="offline-worldbook-select" onchange="saveOfflineSettings()">
+                            <!-- 动态渲染 -->
+                        </select>
+                    </div>
+                    <div class="setting-section">
+                        <div class="setting-label">DATA MANAGEMENT (数据管理)</div>
+                        <div class="setting-value clickable" style="color: #ff3b30;" onclick="clearOfflineHistory()">清空当前分支记录</div>
+                    </div>
+                    <div class="setting-section">
+                        <div class="setting-label">BANNED WORDS (禁词)</div>
+                        <input type="text" id="offline-banned-input" class="minimal-input" placeholder="输入禁词，用逗号分隔" oninput="handleBannedWordInput(this)">
+                        <div id="offline-banned-tags" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
+                    </div>
+                    <div class="setting-section">
+                        <div class="setting-label">MEMORY &amp; CONTEXT (记忆与上下文)</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span style="font-size:12px; color:var(--text-main);">自动总结记忆</span>
+                            <input type="checkbox" id="offline-auto-sum-toggle" onchange="saveOfflineSettings()" style="width:32px!important; height:18px!important;">
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                            <span style="font-size:12px; color:var(--text-sub);">每</span>
+                            <input type="number" id="offline-auto-sum-count" class="minimal-input" style="width:50px; text-align:center; padding:0;" value="50" onblur="saveOfflineSettings()">
+                            <span style="font-size:12px; color:var(--text-sub);">条触发</span>
+                        </div>
+                        <div class="setting-value clickable" style="color:var(--text-main); margin-bottom:16px;" onclick="triggerOfflineManualSum()">[ 手动总结当前所有消息 ]</div>
+                        
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                            <span style="font-size:12px; color:var(--text-sub);">读取线上上下文:</span>
+                            <input type="number" id="offline-online-ctx" class="minimal-input" style="width:50px; text-align:center; padding:0;" value="0" placeholder="0为不限" onblur="saveOfflineSettings()">
+                            <span style="font-size:12px; color:var(--text-sub);">条</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:12px; color:var(--text-sub);">读取线下上下文:</span>
+                            <input type="number" id="offline-offline-ctx" class="minimal-input" style="width:50px; text-align:center; padding:0;" value="0" placeholder="0为不限" onblur="saveOfflineSettings()">
+                            <span style="font-size:12px; color:var(--text-sub);">条</span>
+                        </div>
+                    </div>
+                    <div class="setting-section">
+                        <div class="setting-label">WORD COUNT (字数控制)</div>
+                        <input type="text" id="offline-word-count" class="minimal-input" placeholder="例如：500字" onblur="saveOfflineSettings()">
+                    </div>
+                    <div class="setting-section">
+                        <div class="setting-label">PERSPECTIVE (视角)</div>
+                        <div class="perspective-tabs">
+                            <span class="p-tab active" id="ptab-1st" onclick="switchPerspective('1st')">我</span>
+                            <span class="p-tab" id="ptab-2nd" onclick="switchPerspective('2nd')">你</span>
+                            <span class="p-tab" id="ptab-3rd" onclick="switchPerspective('3rd')">他</span>
+                        </div>
+                    </div>
+                    <div class="setting-section">
+                        <div class="setting-label" style="display:flex; justify-content:space-between;">
+                            <span>WRITING STYLE (文风)</span>
+                            <span class="clickable" style="color:var(--text-main);" onclick="manageOfflineStyles()">管理文风</span>
+                        </div>
+                        <select class="minimal-select" id="offline-writing-style" onchange="saveOfflineSettings()">
+                            <!-- 动态渲染 -->
+                        </select>
+                    </div>
+                    <div class="setting-section">
+                        <div class="setting-label">ENTITIES IN ROOM (房间角色)</div>
+                        <div class="room-entities" id="room-entities-list"></div>
+                        <div class="setting-value clickable" style="margin-top: 12px;" onclick="inviteOfflineEntity()">+ 邀请角色</div>
+                    </div>
+                    <div class="token-display">
+                        <div class="setting-label">TOKENS CONSUMED</div>
+                        <div class="token-number" id="drawer-token-count">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 极简长按菜单 (中文) -->
+            <div class="offline-context-menu" id="offline-context-menu">
+                <div class="ctx-item" onclick="handleOfflineAction('edit')">编辑</div>
+                <div class="ctx-item" onclick="handleOfflineAction('polish')">重新润色</div>
+                <div class="ctx-item" onclick="handleOfflineAction('change_perspective')">调整视角</div>
+                <div class="ctx-item" onclick="handleOfflineAction('reroll')">重回</div>
+                <div class="ctx-item" style="color: #ff3b30;" onclick="handleOfflineAction('delete')">删除</div>
+            </div>
+
+            <div class="offline-header">
+                <div class="glass-btn" onclick="openOfflineDrawer('left')" style="width: 32px; height: 32px; background: transparent; border: none; box-shadow: none; color: var(--text-main);"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="1.5" fill="none"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div>
+                <div class="offline-title" id="offline-chapter-title" onclick="closeOfflineEditor()">Chapter I : The Beginning</div>
+                <div class="glass-btn" onclick="openOfflineDrawer('right')" style="width: 32px; height: 32px; background: transparent; border: none; box-shadow: none; color: var(--text-main);"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="1.5" fill="none"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></div>
+            </div>
+            <div class="offline-stage" id="offline-stage"></div>
+            <div class="offline-bottom-bar">
+                <div class="offline-tools">
+                    <span class="offline-tool-btn" onclick="offlineRollDice()">⚄ 检定骰子</span>
+                    <span class="offline-tool-btn" onclick="createOfflineBranch()">⑆ 创建分支</span>
+                    <span class="offline-tool-btn" onclick="addOfflineSystemMsg()">✎ 添加旁白</span>
+                    <span style="margin-left: auto;" id="offline-token-count">TOKEN: 0</span>
+                </div>
+                <div class="offline-input-wrapper">
+                    <input type="text" id="offline-input" class="offline-input" placeholder="描述你的动作，或输入对话..." onkeypress="if(event.key==='Enter') sendOfflineMessage()">
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <div style="cursor: pointer; color: var(--text-sub); font-size: 12px; font-weight: 600;" onclick="triggerOfflineAI()">继续推演</div>
+                        <div style="cursor: pointer; color: var(--text-main);" onclick="sendOfflineMessage()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        </div>
+                    </div>
+                </div>
+                <div id="offline-live-time" style="position:absolute; right:24px; bottom:8px; font-size:9px; color:var(--text-sub); font-family:'Inter', sans-serif; letter-spacing:1px;"></div>
+            </div>
+        </div>
+        </div>
+        <!-- 子页面：转账详情 -->
+        <div class="sub-view" id="sub-transfer-detail" style="z-index: 80;">
+            <div class="app-header">
+                <div class="glass-btn" onclick="closeSubView('sub-transfer-detail')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+                <div class="app-header-title">转账详情</div><div style="width:40px"></div>
+            </div>
+            <div class="form-container" style="display: flex; flex-direction: column; align-items: center; padding: 40px 24px;">
+                <div id="td-icon" style="width: 64px; height: 64px; border-radius: 50%; background: #111; display: flex; justify-content: center; align-items: center; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); transition: background 0.3s;">
+                    <svg viewBox="0 0 24 24" style="width: 32px; height: 32px; stroke: #fff; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round;"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                </div>
+                <div id="td-status" style="font-size: 16px; color: var(--text-main); font-weight: 500; margin-bottom: 8px;">待收款</div>
+                <div id="td-amount" style="font-size: 44px; font-weight: 700; color: var(--text-main); margin-bottom: 40px; font-family: monospace;">¥ 0.00</div>
+                
+                <div style="width: 100%; display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--glass-border); font-size: 14px;">
+                    <div style="color: var(--text-sub);">转账人</div>
+                    <div style="color: var(--text-main); font-weight: 500;" id="td-sender"></div>
+                </div>
+                <div style="width: 100%; display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--glass-border); font-size: 14px;">
+                    <div style="color: var(--text-sub);">转账时间</div>
+                    <div style="color: var(--text-main); font-weight: 500;" id="td-time"></div>
+                </div>
+
+                <div style="width: 100%; margin-top: auto; padding-bottom: 20px; display: flex; flex-direction: column; gap: 12px;" id="td-actions">
+                    <button class="glass-btn-rect dark" style="margin:0;" onclick="handleTransferAction('receive')">确认收款</button>
+                    <button class="glass-btn-rect" style="margin:0;" onclick="handleTransferAction('return')">退还</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 子页面：我的身份面具 -->
+        <div class="sub-view" id="sub-masks">
+            <div class="app-header">
+                <div class="glass-btn" onclick="closeSubView('sub-masks')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+                <div class="app-header-title">我的身份面具</div><div style="width:40px"></div>
+            </div>
+            <div class="form-container">
+                <div id="masks-list-container"></div>
+                <button type="button" class="glass-btn-rect dark" onclick="openAddMask()" style="margin-top: 20px;">创建新面具</button>
+            </div>
+        </div>
+
+        <!-- 子页面：创建/编辑面具 -->
+        <div class="sub-view" id="sub-add-mask">
+            <div class="app-header">
+                <div class="glass-btn" onclick="closeSubView('sub-add-mask')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+                <div class="app-header-title" id="mask-form-title">创建新面具</div><div style="width:40px"></div>
+            </div>
+            <div class="form-container">
+                <input type="hidden" id="mask-edit-id">
+                <div class="form-group"><label>面具名称</label><input type="text" id="mask-name-input" placeholder="例如：工作模式、知心好友..."></div>
+                <div class="form-group"><label>身份详细设定</label><textarea id="mask-desc-input" rows="4" placeholder="详细描述这个身份的性格、背景、说话方式..."></textarea></div>
+                <button type="button" class="glass-btn-rect dark" onclick="saveMask()">保存面具</button>
+            </div>
+        </div>
+
+        <!-- 子页面：添加/编辑AI角色 -->
+        <div class="sub-view" id="sub-add-persona">
+            <div class="app-header">
+                <div class="glass-btn" onclick="closeSubView('sub-add-persona')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+                <div class="app-header-title" id="persona-form-title">添加 AI 角色</div><div style="width:40px"></div>
+            </div>
+            <div class="form-container">
+                <input type="hidden" id="persona-edit-id">
+                <div style="display: flex; justify-content: space-around; margin-bottom: 20px;">
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <label style="font-size: 11px; color: var(--text-sub); margin-bottom: 10px;">角色头像</label>
+                        <div class="profile-avatar-large" onclick="$('persona-avatar-upload').click()" style="margin-bottom: 0; width: 70px; height: 70px; border-radius: 20px;">
+                            <img id="persona-avatar-preview" src="" style="display:none;"><span id="persona-avatar-text">TA</span>
+                        </div>
+                        <input type="file" id="persona-avatar-upload" accept="image/*" style="display:none" onchange="handlePersonaAvatarUpload(event)">
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <label style="font-size: 11px; color: var(--text-sub); margin-bottom: 10px;">我的头像(面具)</label>
+                        <div class="profile-avatar-large" onclick="$('mask-avatar-upload').click()" style="margin-bottom: 0; width: 70px; height: 70px; border-radius: 20px;">
+                            <img id="mask-avatar-preview" src="" style="display:none;"><span id="mask-avatar-text">我</span>
+                        </div>
+                        <input type="file" id="mask-avatar-upload" accept="image/*" style="display:none" onchange="handleMaskAvatarUpload(event)">
+                    </div>
+                </div>
+                <div class="form-group"><label>角色名称</label><input type="text" id="p-name" placeholder="例如：Lumi"></div>
+                <div class="form-group"><label>角色备注/签名</label><input type="text" id="p-desc" placeholder="例如：专属智能助手"></div>
+                <div class="form-group" id="p-greeting-container"><label>开场白 (第一句话)</label><input type="text" id="p-greeting" placeholder="例如：主人，今天过得怎么样？"></div>
+                <div class="form-group"><label>语音 ID (Minimax)</label><input type="text" id="p-voice-id" placeholder="例如：male-qn-qingse"></div>
+                <div class="form-group">
+                    <label>专属聊天壁纸</label>
+                    <input type="file" id="p-bg-upload" accept="image/*" style="display:none" onchange="handlePersonaBgUpload(event)">
+                    <button type="button" class="glass-btn-rect" onclick="$('p-bg-upload').click()">上传专属壁纸</button>
+                    <div id="p-bg-preview" style="font-size: 12px; color: var(--text-sub); margin-top: 4px;">未设置</div>
+                </div>
+                <div class="form-group"><label>指定 AI 读取的你的身份 (面具)</label><select id="ai-read-mask-select"></select></div>
+                <div class="form-group"><label>绑定世界书</label><select id="p-worldbook-select"></select></div>
+                <div class="form-group"><label>详细人设与系统提示词 (System Prompt)</label><textarea id="p-prompt" rows="6" placeholder="详细描述TA的性格、背景、说话风格、与你的关系等。这决定了AI的灵魂..."></textarea></div>
+                
+                <div class="form-group">
+                    <label>读取线上上下文条数 (0为不限)</label>
+                    <input type="number" id="p-online-ctx" placeholder="例如：20" value="0">
+                </div>
+                <div class="form-group">
+                    <label>读取线下上下文条数 (0为不限)</label>
+                    <input type="number" id="p-offline-ctx" placeholder="例如：20" value="0">
+                </div>
+                
+                <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
+                    <label style="margin-bottom:0;">置顶角色</label>
+                    <input type="checkbox" id="p-pinned">
+                </div>
+                <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
+                    <label style="margin-bottom:0;">允许角色主动拉黑我</label>
+                    <input type="checkbox" id="p-can-block">
+                </div>
+                <div class="form-group">
+                    <label>头像显示模式</label>
+                    <select id="p-avatar-mode">
+                        <option value="all">全都显示</option>
+                        <option value="first">仅显示首条消息</option>
+                        <option value="none">全都隐藏</option>
+                        <option value="hide_ai">仅隐藏对方</option>
+                        <option value="hide_user">仅隐藏我方</option>
+                    </select>
+                </div>
+                
+                <div id="persona-extra-actions" style="display:none; margin-top:20px; border-top:1px solid var(--glass-border); padding-top:20px;">
+                    
+                    <div class="cipher-section-label" style="margin-bottom: 10px;">角色钱包账号</div>
+                    <button type="button" class="glass-btn-rect" onclick="generatePersonaWallet()">一键生成角色钱包账号 (需密码登录)</button>
+
+                    <div class="cipher-section-label" style="margin-bottom: 10px; display: flex; justify-content: space-between; cursor: pointer; margin-top: 20px;" onclick="togglePersonaApiConfig()">
+                        <span>独立 API 配置 (点击展开/折叠)</span>
+                        <span id="persona-api-toggle-icon">▼</span>
+                    </div>
+                    
+                    <!-- 新增：补充缺失的 API 配置面板容器 -->
+                    <div id="persona-api-config-panel" style="display: none; padding: 12px; background: var(--glass-bg); border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 16px;">
+                        <div style="font-size: 11px; color: var(--text-sub); margin-bottom: 8px;">此处的配置将覆盖全局设置</div>
+                        <div class="form-group"><label>API URL</label><input type="text" id="p-api-url" placeholder="默认使用全局"></div>
+                        <div class="form-group"><label>API Key</label><input type="password" id="p-api-key" placeholder="默认使用全局"></div>
+                        <div class="form-group"><label>模型 (Model)</label><input type="text" id="p-api-model" placeholder="默认使用全局"></div>
+                        <div class="form-group">
+                            <label>温度 (Temperature): <span id="p-temp-val">0.7</span></label>
+                            <input type="range" id="p-api-temperature" min="0" max="2" step="0.1" value="0.7" oninput="document.getElementById('p-temp-val').textContent = this.value" style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <div class="cipher-section-label" style="margin-bottom: 10px; display: flex; justify-content: space-between;">
+                        <span>核心记忆系统</span>
+                        <span style="color: var(--text-main);">当前消息数: <span id="edit-persona-msg-count">0</span> 条</span>
+                    </div>
+                    <div style="background: var(--glass-bg); border-radius: 12px; padding: 12px; border: 1px solid var(--glass-border); margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <span style="font-size: 12px; color: var(--text-main);">开启自动记忆总结</span>
+                            <input type="checkbox" id="p-auto-sum-toggle" style="width: 36px !important; height: 20px !important;">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span style="font-size: 11px; color: var(--text-sub);">每积累</span>
+                            <input type="number" id="p-auto-sum-count" placeholder="50" value="50" style="width: 60px; background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 6px; padding: 4px 8px; color: var(--text-main); outline: none; font-size: 12px; text-align: center;">
+                            <span style="font-size: 11px; color: var(--text-sub);">条未总结消息时触发</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span style="font-size: 11px; color: var(--text-sub);">每次对话注入最近</span>
+                            <input type="number" id="p-memory-inject-count" placeholder="3" value="3" style="width: 60px; background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 6px; padding: 4px 8px; color: var(--text-main); outline: none; font-size: 12px; text-align: center;">
+                            <span style="font-size: 11px; color: var(--text-sub);">条记忆</span>
+                        </div>
+                        <button type="button" class="glass-btn-rect dark" style="margin: 0; border-radius: 8px;" onclick="triggerManualSummarize()">立即手动总结未处理消息</button>
+                    </div>
+                    
+                    <button type="button" class="glass-btn-rect" style="margin-bottom: 20px; border-color: var(--text-main); color: var(--text-main);" onclick="openMemoryAppForCurrent()">进入角色记忆库 (已总结: <span id="edit-persona-sum-count">0</span> 条)</button>
+
+                    <div class="cipher-section-label" style="margin-bottom: 10px;">数据管理</div>
+                    <button type="button" class="glass-btn-rect" onclick="clearChatHistory()">清空聊天记录</button>
+                    <button type="button" class="glass-btn-rect" onclick="exportChatHistory()">导出聊天记录</button>
+                    <input type="file" id="import-chat-file" accept=".json" style="display:none" onchange="importChatHistory(event)">
+                    <button type="button" class="glass-btn-rect" onclick="document.getElementById('import-chat-file').click()">导入聊天记录</button>
+                    
+                    <button type="button" class="glass-btn-rect" id="block-persona-btn" style="color: #ff3b30; border-color: #ff3b30; margin-top: 10px;" onclick="blockCurrentPersona()">拉黑此角色</button>
+                </div>
+                <button type="button" class="glass-btn-rect dark" onclick="savePersona()" style="margin-top: 20px;">保存角色</button>
+            </div>
+        </div>
+
+        <!-- 子页面：设置 (API) -->
+        <div class="sub-view" id="sub-settings">
+            <div class="app-header">
+                <div class="glass-btn" onclick="closeSubView('sub-settings')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+                <div class="app-header-title">API 设置</div><div style="width:40px"></div>
+            </div>
+            <div class="form-container">
+                <div class="form-group">
+                    <label>配置预设</label>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <select id="api-preset-select" onchange="loadPreset()" style="flex: 1;"></select>
+                        <button type="button" class="action-btn" onclick="deletePreset()" style="width: 48px; height: 48px; border-radius: 16px;"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="api-preset-name" placeholder="新预设名称" style="flex: 1;">
+                        <button type="button" class="glass-btn-rect dark" onclick="savePreset()" style="width: auto; padding: 0 20px; margin-bottom: 0;">保存预设</button>
+                    </div>
+                </div>
+                <hr style="border: none; border-top: 1px solid var(--glass-border); margin: 20px 0;">
+                <div class="form-group"><label>API Base URL</label><input type="text" id="api-url" placeholder="https://api.openai.com/v1"></div>
+                <div class="form-group"><label>API Key</label><input type="password" id="api-key" placeholder="sk-..."></div>
+                <div class="form-group">
+                    <label>模型名称 (Model)</label>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <input type="text" id="api-model" placeholder="gpt-3.5-turbo" value="gpt-3.5-turbo" style="flex: 1;">
+                        <button type="button" class="glass-btn-rect" onclick="fetchModels()" style="width: auto; padding: 0 16px; margin-bottom: 0; font-size: 13px;">拉取模型</button>
+                    </div>
+                    <select id="api-model-select" onchange="$('api-model').value = this.value" style="display: none; margin-top: 8px;"></select>
+                </div>
+                <div class="form-group">
+                    <label>温度 (Temperature): <span id="temp-val">0.7</span></label>
+                    <input type="range" id="api-temperature" min="0" max="2" step="0.1" value="0.7" oninput="$('temp-val').textContent = this.value" style="width: 100%;">
+                </div>
+                <hr style="border: none; border-top: 1px solid var(--glass-border); margin: 20px 0;">
+                <div class="form-group"><label>Minimax Group ID (语音配置)</label><input type="text" id="minimax-group-id" placeholder="输入 Group ID"></div>
+                <div class="form-group"><label>Minimax API Key (语音配置)</label><input type="password" id="minimax-api-key" placeholder="输入 API Key"></div>
+                <button type="button" class="glass-btn-rect dark" onclick="saveAPIConfig()">应用当前配置</button>
+                <button type="button" class="glass-btn-rect" onclick="testAPIConnection()">测试连接</button>
+                <p id="api-status" style="margin-top: 10px; font-size: 13px; color: var(--text-sub); text-align: center;"></p>
+            </div>
+        </div>
+
+        <!-- 子页面：字体与显示设置 -->
+        <div class="sub-view" id="sub-font">
+            <div class="app-header">
+                <div class="glass-btn" onclick="closeSubView('sub-font')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+                <div class="app-header-title">字体与显示</div><div style="width:40px"></div>
+            </div>
+            <div class="form-container">
+                <div class="form-group">
+                    <label>配置预设</label>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <select id="font-preset-select" onchange="loadFontPreset()" style="flex: 1;"></select>
+                        <button type="button" class="action-btn" onclick="deleteFontPreset()" style="width: 48px; height: 48px; border-radius: 16px;"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="font-preset-name" placeholder="新预设名称" style="flex: 1;">
+                        <button type="button" class="glass-btn-rect dark" onclick="saveFontPreset()" style="width: auto; padding: 0 20px; margin-bottom: 0;">保存预设</button>
+                    </div>
+                </div>
+                <hr style="border: none; border-top: 1px solid var(--glass-border); margin: 20px 0;">
+                
+                <div class="form-group">
+                    <label>预览文本</label>
+                    <input type="text" id="font-preview-input" value="让过去过去，让将来将来。" oninput="document.getElementById('font-preview-display').textContent = this.value || '预览文本'">
+                </div>
+                
+                <div class="form-group">
+                    <label>字体文件 URL 链接</label>
+                    <input type="text" id="font-url-input" placeholder="https://.../font.ttf">
+                </div>
+                
+                <div class="form-group">
+                    <label>或 本地上传字体文件 (.ttf, .otf, .woff)</label>
+                    <input type="file" id="font-file-upload" accept=".ttf,.otf,.woff,.woff2" style="display:none" onchange="handleFontFileUpload(event)">
+                    <button type="button" class="glass-btn-rect" onclick="document.getElementById('font-file-upload').click()">选择本地字体文件</button>
+                    <div id="font-file-name" style="font-size: 12px; color: var(--text-sub); margin-top: 4px;">未选择文件</div>
+                </div>
+
+                <div class="form-group">
+                    <label>字体大小缩放: <span id="font-scale-val">1.0</span></label>
+                    <input type="range" id="font-scale-slider" min="0.8" max="1.5" step="0.05" value="1" oninput="document.getElementById('font-scale-val').textContent = this.value; updateFontPreview();" style="width: 100%;">
+                </div>
+
+                <div style="padding: 20px; background: var(--glass-bg); border-radius: 16px; border: 1px solid var(--glass-border); margin-bottom: 20px; text-align: center; min-height: 80px; display: flex; align-items: center; justify-content: center;">
+                    <span id="font-preview-display" style="font-size: calc(16px * var(--text-scale));">让过去过去，让将来将来。</span>
+                </div>
+
+                <button type="button" class="glass-btn-rect dark" onclick="applyAndSaveFontData()">应用并保存数据</button>
+            </div>
+        </div>
+
+        <div class="home-indicator" onclick="goHome()"></div>
+        
+        <!-- 自定义文本编辑弹窗 -->
+        <div class="modal-overlay" id="custom-edit-modal" style="z-index: 999999;">
+            <div class="modal-content" style="width: 95%; height: 85vh; max-height: 800px; padding: 20px; display: flex; flex-direction: column;">
+                <h3 style="margin-bottom: 16px; font-size: 16px; color: var(--text-main);" id="custom-edit-title">编辑内容</h3>
+                <textarea id="custom-edit-textarea" style="flex: 1; width: 100%; min-height: 300px; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-main); font-size: 14px; outline: none; resize: none; font-family: var(--font-family); margin-bottom: 16px;"></textarea>
+                <div style="display: flex; gap: 10px; margin-top: auto;">
+                    <button type="button" class="glass-btn-rect" onclick="$('custom-edit-modal').classList.remove('show')">取消</button>
+                    <button type="button" class="glass-btn-rect dark" id="custom-edit-confirm">确定</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 通用单行输入弹窗 (替代 prompt) -->
+        <div class="modal-overlay" id="custom-prompt-modal" style="z-index: 999999;">
+            <div class="modal-content" style="width: 85%; padding: 20px;">
+                <h3 style="margin-bottom: 16px; font-size: 15px; color: var(--text-main);" id="custom-prompt-title">请输入</h3>
+                <input type="text" id="custom-prompt-input" style="width: 100%; padding: 10px 0; border: none; border-bottom: 1px solid var(--glass-border); background: transparent; color: var(--text-main); font-size: 14px; outline: none; margin-bottom: 20px;">
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="glass-btn-rect" onclick="$('custom-prompt-modal').classList.remove('show')">取消</button>
+                    <button type="button" class="glass-btn-rect dark" id="custom-prompt-confirm">确定</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 通用选择弹窗 (替代 select) -->
+        <div class="modal-overlay" id="custom-select-modal" style="z-index: 999999;">
+            <div class="modal-content" style="width: 85%; padding: 20px; max-height: 60vh; display: flex; flex-direction: column;">
+                <h3 style="margin-bottom: 16px; font-size: 15px; color: var(--text-main);" id="custom-select-title">请选择</h3>
+                <div id="custom-select-list" style="overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;"></div>
+                <button type="button" class="glass-btn-rect" onclick="$('custom-select-modal').classList.remove('show')">取消</button>
+            </div>
+        </div>
+        
+    </div>
+<script src="script.js">
+</script>
+</body>
+</html>
